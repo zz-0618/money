@@ -1,1 +1,13 @@
-import{createClient}from'@supabase/supabase-js';const url=import.meta.env.VITE_SUPABASE_URL;const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;if(!url||!key)console.warn('請設定 Supabase 環境變數');export const supabase=createClient(url||'https://placeholder.supabase.co',key||'placeholder');
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Supabase 環境變數尚未設定')
+}
+
+export const supabase = createClient(
+  supabaseUrl,
+  supabaseKey
+)
