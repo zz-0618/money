@@ -1,8 +1,8 @@
 {
-  // ...
-  "vars": {
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_43Unnq6VSgMHeOLWvxq1JA_BAaAvRo-",
-    "VITE_SUPABASE_URL": "https://pfupzcydqjqynbltofmu.supabase.co"
-  },
-  // ...
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "money",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "./dist"
+  }
 }
