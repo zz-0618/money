@@ -80,7 +80,25 @@ function AccountsPage({user,accounts,txs,done}:any){
   const[name,setName]=useState('');const[kind,setKind]=useState('bank');const[currency,setCurrency]=useState('TWD');const[balance,setBalance]=useState('0')
   const ordered=useMemo(()=>[...accounts].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)),[accounts])
   async function add(e:FormEvent){e.preventDefault();const{error}=await supabase.from('accounts').insert({user_id:user.id,name,kind,currency,balance:Number(balance),sort_order:ordered.length});if(error)return alert(error.message);setAdding(false);setName('');setBalance('0');done('帳戶已新增')}
-  async function dropAccount(targetId:string){if(!draggingAccount||draggingAccount===targetId)return;const from=ordered.findIndex((x:Account)=>x.id===draggingAccount),to=ordered.findIndex((x:Account)=>x.id===targetId);if(from<0||to<0)return;const reordered=[...ordered];reordered.splice(to,0,reordered.splice(from,1)[0]);const results=await Promise.all(reordered.map((x:Account,i:number)=>supabase.from('accounts').update({sort_order:(i+1)*100}).eq('id',x.id)));const error=results.find(r=>r.error)?.error;setDraggingAccount('');if(error)return done(error.message);done('帳戶順序已更新')}
+  async function dropAccount(targetId:string){
+    if(!draggingAccount||draggingAccount===targetId)return
+    const from=ordered.findIndex((x:Account)=>x.id===draggingAccount)
+    const to=ordered.findIndex((x:Account)=>x.id===targetId)
+    if(from<0||to<0){setDraggingAccount('');return}
+    const reordered=[...ordered]
+    const[moved]=reordered.splice(from,1)
+    reordered.splice(to,0,moved)
+    setDraggingAccount('')
+    try{
+      for(let i=0;i<reordered.length;i++){
+        const{error}=await supabase.from('accounts').update({sort_order:(i+1)*100}).eq('id',reordered[i].id).eq('user_id',user.id)
+        if(error)throw error
+      }
+      done('帳戶順序已更新')
+    }catch(error:any){
+      done(`排序失敗：${error?.message||'無法連線到資料庫'}`)
+    }
+  }
   if(selected){const rows=txs.filter((x:Tx)=>x.account_id===selected.id);return <><button className="back" onClick={()=>setSelected(undefined)}><ArrowLeft size={18}/>所有帳戶</button><section className="hero"><span>{selected.name}</span><strong>{money(Number(selected.balance),selected.currency)}</strong></section><section className="panel"><h2>帳戶明細</h2>{rows.length?rows.map((x:Tx)=><div className="row" key={x.id}><span>{x.note||({expense:'支出',income:'收入',transfer:'轉帳'} as any)[x.kind]}<small>{new Date(x.occurred_at).toLocaleString('zh-TW')}</small></span><b className={x.kind}>{x.kind==='expense'?'-':x.kind==='income'?'+':''}{money(Number(x.amount),x.currency)}</b></div>):<p className="empty">尚無明細</p>}</section></>}
   return <><div className="page-tools"><span>共 {ordered.length} 個帳戶</span><div><button className={'iconbtn '+(sorting?'on':'')} title="編輯順序" onClick={()=>setSorting(!sorting)}><Menu/></button></div></div><section className={"panel account-list "+(sorting?"sorting":"")}>{ordered.map((a:Account)=><div className="account-row" draggable={sorting} onDragStart={()=>setDraggingAccount(a.id)} onDragOver={e=>sorting&&e.preventDefault()} onDrop={()=>sorting&&dropAccount(a.id)} key={a.id}>{sorting&&<GripVertical className="account-grip"/>}<button className="account-main" onClick={()=>!sorting&&setSelected(a)}><span>{a.name}<small>{a.kind}・{a.currency}</small></span><b>{money(Number(a.balance),a.currency)}</b></button></div>)}</section><button className="floating-add" title="新增帳戶" aria-label="新增帳戶" onClick={()=>setAdding(true)}><Plus/></button>{adding&&<div className="modal"><form className="panel" onSubmit={add}><button type="button" className="modal-close" onClick={()=>setAdding(false)}><X/></button><h2>新增帳戶</h2><input placeholder="帳戶名稱" value={name} onChange={e=>setName(e.target.value)} required/><select value={kind} onChange={e=>setKind(e.target.value)}><option value="cash">現金</option><option value="bank">銀行</option><option value="debit_card">簽帳卡</option><option value="credit_card">信用卡</option><option value="transit_card">電子票證</option><option value="gift_card">禮物卡</option></select><select value={currency} onChange={e=>setCurrency(e.target.value)}>{['TWD','USD','JPY','KRW','EUR'].map(x=><option key={x}>{x}</option>)}</select><input type="number" step="0.01" value={balance} onChange={e=>setBalance(e.target.value)} placeholder="初始餘額"/><button>新增帳戶</button></form></div>}</>
 }
