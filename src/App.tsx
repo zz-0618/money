@@ -90,10 +90,9 @@ function AccountsPage({user,accounts,txs,done}:any){
     reordered.splice(to,0,moved)
     setDraggingAccount('')
     try{
-      for(let i=0;i<reordered.length;i++){
-        const{error}=await supabase.from('accounts').update({sort_order:(i+1)*100}).eq('id',reordered[i].id).eq('user_id',user.id)
-        if(error)throw error
-      }
+      const items=reordered.map((x:Account,i:number)=>({id:x.id,sort_order:(i+1)*100}))
+      const{error}=await supabase.rpc('reorder_accounts',{items})
+      if(error)throw error
       done('帳戶順序已更新')
     }catch(error:any){
       done(`排序失敗：${error?.message||'無法連線到資料庫'}`)
