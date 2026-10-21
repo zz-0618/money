@@ -108,7 +108,34 @@ function Ledger({user,accounts,txs,categories,defaultCurrency,done}:any){
   useEffect(()=>{if(!account&&accounts[0])setAccount(accounts[0].id)},[accounts]);useEffect(()=>setCurrency(defaultCurrency||'TWD'),[defaultCurrency]);useEffect(()=>{if(parent&&!parents.some((x:Category)=>x.id===parent))setParent('');if(category&&!all.some((x:Category)=>x.id===category))setCategory('')},[categories,parent,category])
   function open(x?:Tx){setEditing(x);setKind(x?.kind||'expense');setAmount(x?String(x.amount):'');setExpression(x?String(x.amount):'');setAccount(x?.account_id||accounts[0]?.id||'');setCurrency(x?.currency||defaultCurrency||'TWD');setCategory(x?.category_id||'');const cat=all.find((c:Category)=>c.id===x?.category_id);setParent(cat?.parent_id||cat?.id||parents[0]?.id||'');setNote(x?.note||'');setOccurred(x?new Date(x.occurred_at).toISOString().slice(0,16):new Date().toISOString().slice(0,16));setEditor(true)}
   function calc(key:string){if(key==='C'){setExpression('');setAmount('');return}if(key==='⌫'){const v=expression.slice(0,-1);setExpression(v);setAmount(v);return}if(key==='='){try{const safe=expression.replace(/×/g,'*').replace(/÷/g,'/');if(!/^[0-9+\-*/.() ]+$/.test(safe))return;const v=String(Function(`return (${safe})`)());setExpression(v);setAmount(v)}catch{}return}const v=expression+key;setExpression(v);if(/^[0-9.]+$/.test(v))setAmount(v)}
-  async function save(e:FormEvent){e.preventDefault();const validCategory=all.some((x:Category)=>x.id===category)?category:null,payload={user_id:user.id,kind,amount:Number(amount),currency,account_id:account,category_id:validCategory,note,occurred_at:new Date(occurred).toISOString(),is_reimbursable:false,is_advance:false};const q=editing?supabase.from('transactions').update(payload).eq('id',editing.id):supabase.from('transactions').insert(payload);const{error}=await q;if(error)return done(error.message);setEditor(false);done(editing?'記錄已更新':'記錄已新增')}
+  async function save(e:FormEvent){
+    e.preventDefault()
+    const numericAmount=Number(amount)
+    if(!Number.isFinite(numericAmount)||numericAmount<0)return done('資料驗證失敗：請輸入正確金額')
+    if(!account)return done('資料驗證失敗：請選擇帳戶')
+    const validCategory=all.some((x:Category)=>x.id===category)?category:null
+    try{
+      const{data,error}=await supabase.rpc('save_transaction_record',{
+        p_transaction_id:editing?.id||null,
+        p_kind:kind,
+        p_amount:numericAmount,
+        p_currency:currency,
+        p_account_id:account,
+        p_category_id:validCategory,
+        p_note:note.trim()||null,
+        p_occurred_at:new Date(occurred).toISOString()
+      })
+      if(error)throw error
+      if(!data)throw new Error('資料庫未回傳記錄編號')
+      setEditor(false)
+      done(editing?'記錄已更新':'記錄已新增')
+    }catch(error:any){
+      const message=error?.message||'無法連線到資料庫'
+      if(/jwt|auth|session|authenticated/i.test(message))done('登入狀態失效，請重新登入')
+      else if(/failed to fetch|network/i.test(message))done('網路連線失敗，請確認網路後重試')
+      else done(`資料庫拒絕寫入：${message}`)
+    }
+  }
   async function remove(x:Tx){if(!confirm('確定刪除這筆記錄？刪除後無法復原。'))return;const{error}=await supabase.from('transactions').delete().eq('id',x.id);if(error)return done(error.message);setEditor(false);setSwiped('');done('記錄已刪除')}
   return <><div className="ledger-head"><span>共 {txs.length} 筆記錄</span></div><button className="floating-add" title="新增記帳" aria-label="新增記帳" onClick={()=>open()}><Plus/></button><section className="panel transaction-list">{txs.length?txs.map((x:Tx)=>{const cat=all.find((c:Category)=>c.id===x.category_id);return <div className={'swipe-row '+(swiped===x.id?'swiped':'')} key={x.id} onTouchStart={e=>setTouchX(e.touches[0].clientX)} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touchX;if(d<-45)setSwiped(x.id);if(d>35)setSwiped('')}}><button className="swipe-delete" onClick={()=>remove(x)}>刪除</button><button className="transaction-main" onClick={()=>open(x)}><span><b>{x.note||cat?.name||({expense:'支出',income:'收入',transfer:'轉帳'}as any)[x.kind]}</b><small>{cat?.name&&x.note?cat.name+'・':''}{new Date(x.occurred_at).toLocaleString('zh-TW')}</small></span><strong className={x.kind}>{x.kind==='expense'?'-':x.kind==='income'?'+':''}{money(Number(x.amount),x.currency)}</strong></button></div>}):<p className="empty">尚無記帳記錄</p>}</section>{editor&&<div className="modal transaction-modal"><form className="panel" onSubmit={save}><button type="button" className="modal-close" onClick={()=>setEditor(false)}><X/></button><h2>{editing?'編輯記錄':'新增記錄'}</h2><div className="seg">{['expense','income','transfer'].map(x=><button key={x} type="button" className={kind===x?'on':''} onClick={()=>{setKind(x as any);setParent('');setCategory('')}}>{({expense:'支出',income:'收入',transfer:'轉帳'}as any)[x]}</button>)}</div><div className="parent-tabs">{parents.map((x:Category)=><button type="button" className={parent===x.id?'on':''} onClick={()=>{setParent(x.id);setCategory('')}} key={x.id}>{x.name}</button>)}</div><div className="child-grid">{children.map((x:Category)=><button type="button" className={category===x.id?'on':''} onClick={()=>setCategory(x.id)} key={x.id}>{x.name}</button>)}</div><div className="note-time"><input placeholder="備註" value={note} onChange={e=>setNote(e.target.value)}/><input type="datetime-local" value={occurred} onChange={e=>setOccurred(e.target.value)}/></div><div className="amount-display">{expression||'0'}<small>{currency}</small></div><div className="calculator">{['7','8','9','÷','4','5','6','×','1','2','3','-','C','0','.','+','⌫','(',')','='].map(k=><button type="button" key={k} onClick={()=>calc(k)}>{k}</button>)}</div><select value={account} onChange={e=>setAccount(e.target.value)} required>{accounts.map((a:Account)=><option key={a.id} value={a.id}>{a.name}</option>)}</select><select value={currency} onChange={e=>setCurrency(e.target.value)}>{['TWD','USD','JPY','KRW','EUR'].map(x=><option key={x}>{x}</option>)}</select><button disabled={!amount||Number(amount)<0}>{editing?'儲存修改':'新增記錄'}</button>{editing&&<button type="button" className="delete-full" onClick={()=>remove(editing)}>刪除這筆記錄</button>}</form></div>}</>
 }
