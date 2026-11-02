@@ -1,10 +1,10 @@
-import {db,tableOf} from './db'
-import type {OfflineSnapshot,SyncJob,TableName} from './types'
+import{db,tableOf}from'./db'
+import type{OfflineSnapshot,SyncJob,TableName}from'./types'
 const TABLES:TableName[]=['accounts','transactions','todos','journal_entries','user_categories','user_settings','balance_adjustments']
 export const now=()=>new Date().toISOString()
-export function localId(){return crypto.randomUUID()}
-export async function readSnapshot(userId:string):Promise<OfflineSnapshot>{const out:any={};await Promise.all(TABLES.map(async n=>{const rows=await tableOf(n).where('user_id').equals(userId).toArray().catch(()=>tableOf(n).toArray());out[n]=rows.filter((x:any)=>!x._deleted)}));return out}
-export async function replaceFromCloud(table:TableName,userId:string,rows:any[]){await db.transaction('rw',tableOf(table),async()=>{const pending=await tableOf(table).filter((x:any)=>x.user_id===userId&&x._sync==='pending').toArray();const pendingIds=new Set(pending.map((x:any)=>x.id));const cloud=rows.filter(x=>!pendingIds.has(x.id)).map(x=>({...x,_sync:'synced',_deleted:false}));await tableOf(table).bulkPut(cloud);const cloudIds=new Set(rows.map(x=>x.id));const stale=await tableOf(table).filter((x:any)=>x.user_id===userId&&x._sync!=='pending'&&x.id&&!cloudIds.has(x.id)).primaryKeys();if(stale.length)await tableOf(table).bulkDelete(stale as any)})}
-export async function enqueue(job:Omit<SyncJob,'id'|'createdAt'|'attempts'>){await db.syncQueue.put({...job,id:localId(),createdAt:now(),attempts:0})}
-export async function localPut(table:TableName,row:any){const value={...row,id:row.id||localId(),updated_at:row.updated_at||now(),_sync:'pending',_deleted:false};await tableOf(table).put(value);return value}
-export async function localDelete(table:TableName,id:string){await tableOf(table).update(id,{_deleted:true,_sync:'pending',updated_at:now()})}
+export const localId=()=>crypto.randomUUID()
+export async function readSnapshot(userId:string):Promise<OfflineSnapshot>{const out:any={};await Promise.all(TABLES.map(async table=>{const rows=await tableOf(table).filter((x:any)=>x.user_id===userId&&!x._deleted).toArray();out[table]=rows}));return out}
+export async function replaceFromCloud(table:TableName,userId:string,rows:any[]){await db.transaction('rw',tableOf(table),async()=>{const local=tableOf(table);const pending=await local.filter((x:any)=>x.user_id===userId&&(x._sync==='pending'||x._sync==='failed')).toArray();const protectedIds=new Set(pending.map((x:any)=>x.id));await local.bulkPut(rows.filter(x=>!protectedIds.has(x.id)).map(x=>({...x,_sync:'synced',_deleted:false,_syncError:undefined})));const cloudIds=new Set(rows.map(x=>x.id));const stale=await local.filter((x:any)=>x.user_id===userId&&x._sync==='synced'&&x.id&&!cloudIds.has(x.id)).primaryKeys();if(stale.length)await local.bulkDelete(stale as any)})}
+export async function enqueue(job:Omit<SyncJob,'id'|'createdAt'|'attempts'>){if(job.recordId&&job.action==='update'){const old=await db.syncQueue.filter(x=>x.userId===job.userId&&x.table===job.table&&x.recordId===job.recordId&&x.action==='update').toArray();if(old.length)await db.syncQueue.bulkDelete(old.map(x=>x.id))}const item:SyncJob={...job,id:localId(),createdAt:now(),attempts:0};await db.syncQueue.put(item);return item}
+export async function localPut(table:TableName,row:any){const value={...row,id:row.id||localId(),_sync:'pending',_deleted:false,_syncError:undefined};await tableOf(table).put(value);return value}
+export async function localDelete(table:TableName,id:string){await tableOf(table).update(id,{_deleted:true,_sync:'pending',_syncError:undefined})}
