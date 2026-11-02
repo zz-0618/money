@@ -1,0 +1,3 @@
+import {useEffect,useState} from 'react'
+import {pendingCount} from './offlineRepository'
+export function useNetworkStatus(userId?:string){const[online,setOnline]=useState(navigator.onLine);const[pending,setPending]=useState(0);useEffect(()=>{const refresh=async()=>{setOnline(navigator.onLine);if(userId)setPending(await pendingCount(userId))};window.addEventListener('online',refresh);window.addEventListener('offline',refresh);const t=window.setInterval(refresh,1500);refresh();return()=>{window.removeEventListener('online',refresh);window.removeEventListener('offline',refresh);clearInterval(t)}},[userId]);return{online,pending,label:!online?`● 離線使用中${pending?`・${pending} 筆待同步`:''}`:pending?`● ${pending} 筆等待同步`:'● 已同步'}}

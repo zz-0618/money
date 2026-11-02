@@ -1,0 +1,9 @@
+import {db,tableOf} from './db'
+import {replaceFromCloud} from './localRepository'
+import type {TableName} from './types'
+import {cloud} from './supabase'
+const TABLES:TableName[]=['accounts','transactions','todos','journal_entries','user_categories','user_settings','balance_adjustments']
+let running=false
+export async function pullAll(userId:string){if(!navigator.onLine)return;await Promise.all(TABLES.map(async table=>{let q:any=cloud.from(table).select('*');if(table==='user_settings')q=q.eq('user_id',userId);const{data,error}=await q;if(!error)await replaceFromCloud(table,userId,data||[])}));await db.meta.put({key:`lastPull:${userId}`,value:new Date().toISOString()})}
+export async function flushQueue(userId:string){if(running||!navigator.onLine)return;running=true;try{const jobs=await db.syncQueue.where('userId').equals(userId).sortBy('createdAt');for(const job of jobs){try{let result:any;if(job.action==='rpc')result=await cloud.rpc(job.rpcName!,job.payload);else{let q:any=cloud.from(job.table);if(job.action==='insert')q=q.insert(job.payload);if(job.action==='upsert')q=q.upsert(job.payload);if(job.action==='update'){q=q.update(job.payload);for(const[k,v]of Object.entries(job.match||{}))q=q.eq(k,v)}if(job.action==='delete'){q=q.delete();for(const[k,v]of Object.entries(job.match||{}))q=q.eq(k,v)}result=await q}if(result?.error)throw result.error;await db.syncQueue.delete(job.id);if(job.recordId&&job.table!=='rpc')await tableOf(job.table).update(job.recordId,{_sync:'synced'})}catch(e:any){await db.syncQueue.update(job.id,{attempts:job.attempts+1,lastError:e?.message||String(e)});break}}await pullAll(userId)}finally{running=false}}
+export function startSync(userId:string,onChange?:()=>void){const sync=async()=>{await flushQueue(userId);onChange?.()};window.addEventListener('online',sync);const timer=window.setInterval(sync,30000);sync();return()=>{window.removeEventListener('online',sync);window.clearInterval(timer)}}
