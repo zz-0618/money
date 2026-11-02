@@ -54,8 +54,31 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 /* Offline-first todos */
 .todo-row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:11px;align-items:center;border-top:1px solid #242424;padding:13px 0}.todo-row:first-of-type{border-top:0}.todo-check{width:24px!important;height:24px!important;min-width:24px;padding:0!important;margin:0!important;border:2px solid #777!important;border-radius:50%!important;background:transparent!important;color:#050505!important;display:grid!important;place-items:center;cursor:pointer}.todo-row.done .todo-check{background:#fff!important;border-color:#fff!important}.todo-content{border:0!important;background:transparent!important;color:#fff!important;text-align:left!important;padding:0!important;margin:0!important;cursor:pointer}.todo-content b{display:block}.todo-content>small{display:block;margin-top:4px;color:#8f8f8f}.todo-row.done .todo-content b{text-decoration:line-through;color:#888}.todo-pending{display:inline!important;color:#a9b8ff!important;font-weight:500}.completed-toggle{width:100%;margin-top:14px;border:1px solid #303030!important;background:#161616!important;color:#ddd!important;display:flex!important;align-items:center;justify-content:space-between}.completed-toggle svg{transition:transform .2s}.completed-toggle svg.open{transform:rotate(180deg)}.completed-list{margin-top:6px}.secondary-form-button{background:#242424!important;color:#fff!important}
 
-/* Ledger category hierarchy: child starts one character after parent */
-.subcategories{padding-left:1em!important}
-.subcategory-drag-row{padding-left:0!important}
-.child-category-name{margin-left:0!important;text-align:left!important;justify-self:start!important}
-.income-category-row{padding-left:1em!important}
+/* Keep ledger subcategory text next to drag handle: one character after parent text */
+.subcategories{
+  padding-left:1em!important;
+}
+.subcategory-drag-row{
+  display:grid!important;
+  grid-template-columns:24px max-content 1fr auto!important;
+  column-gap:9px!important;
+  align-items:center!important;
+  padding-left:0!important;
+}
+.subcategory-drag-row>.child-category-name,
+.child-category-name{
+  grid-column:2!important;
+  width:max-content!important;
+  min-width:0!important;
+  justify-self:start!important;
+  margin:0!important;
+  text-align:left!important;
+}
+.subcategory-drag-row>span:last-child{
+  grid-column:4!important;
+  justify-self:end!important;
+}
+.income-category-row{
+  padding-left:1em!important;
+  grid-template-columns:24px max-content 1fr auto!important;
+}
