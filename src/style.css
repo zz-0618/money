@@ -85,3 +85,67 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
   height:20px!important;
   stroke-width:2!important;
 }
+
+/* Final ledger category alignment: fixed action sizes + left-aligned child labels */
+.category-drag-row,
+.subcategory-drag-row,
+.income-category-row{
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr) auto!important;
+  column-gap:9px!important;
+  align-items:center!important;
+}
+.subcategories{
+  padding-left:1em!important;
+}
+.subcategory-drag-row,
+.income-category-row{
+  padding-left:0!important;
+}
+.category-drag-row>.parent-category-name,
+.subcategory-drag-row>.child-category-name,
+.income-category-row>.child-category-name{
+  grid-column:2!important;
+  justify-self:start!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
+}
+.category-drag-row>span:last-child,
+.subcategory-drag-row>span:last-child,
+.income-category-row>span:last-child{
+  grid-column:3!important;
+  justify-self:end!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+.category-drag-row>span:last-child button,
+.subcategory-drag-row>span:last-child button,
+.income-category-row>span:last-child button{
+  box-sizing:border-box!important;
+  width:44px!important;
+  height:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  min-height:44px!important;
+  max-height:44px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:12px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 44px!important;
+}
+.category-drag-row>span:last-child button svg,
+.subcategory-drag-row>span:last-child button svg,
+.income-category-row>span:last-child button svg{
+  width:20px!important;
+  height:20px!important;
+  min-width:20px!important;
+  min-height:20px!important;
+  stroke-width:2!important;
+}
