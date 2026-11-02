@@ -37,3 +37,15 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 .category-add-circle{width:34px!important;height:34px!important;min-width:34px!important;padding:0!important;margin:0!important;border:1px solid #333!important;border-radius:50%!important;background:#fff!important;color:#050505!important;display:inline-flex!important;align-items:center;justify-content:center;cursor:pointer}
 .category-heading-row .category-kind-switch{margin-left:4px}
 @media(max-width:600px){.category-heading-row{flex-direction:row!important;align-items:center!important;gap:9px!important}.category-heading-row .category-kind-switch{width:180px}.fee-option{align-items:flex-start;flex-direction:column}.fee-option input[type="number"]{width:100%}}
+
+
+/* Account detail editing and balance adjustments */
+.account-detail-tools{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.account-detail-tools .back{margin:0}
+.account-edit-button{display:inline-flex;align-items:center;gap:7px;border:1px solid #333;border-radius:12px;padding:10px 15px;background:#fff;color:#050505;font-weight:700;cursor:pointer}
+.account-edit-modal{width:min(480px,100%)}
+.account-edit-modal label{display:block;margin:10px 0;color:#aaa;font-size:13px}
+.adjustment-hint{padding:10px 12px;margin:8px 0 4px;background:#171717;border:1px solid #303030;border-radius:10px;line-height:1.6}
+.adjustment-row .adjustment{color:#a9b8ff}
+.hero>small{margin-top:10px;color:#999}
+@media(max-width:600px){.account-edit-button{padding:9px 12px}.account-detail-tools{margin-top:4px}}

@@ -7,11 +7,12 @@ import {
 import { supabase } from './supabase'
 import * as XLSX from 'xlsx'
 
-type Account={id:string;name:string;kind:string;currency:string;balance:number|string;sort_order?:number;created_at?:string}
+type Account={id:string;name:string;kind:string;currency:string;balance:number|string;initial_balance?:number|string;sort_order?:number;created_at?:string}
 type Tx={id:string;kind:'expense'|'income'|'transfer';amount:number|string;currency:string;account_id:string;transfer_to_account_id?:string|null;category_id?:string|null;note?:string;occurred_at:string;fee?:number|string;original_amount?:number|string|null;original_currency?:string|null;base_amount?:number|string|null;base_currency?:string|null;exchange_rate?:number|string|null}
 type Todo={id:string;title:string;due_at:string;location_name?:string;is_done:boolean;category_id?:string|null}
 type Journal={id:string;entry_date:string;mood:string;body:string;mood_category_id?:string|null}
 type Category={id:string;scope:'transaction'|'todo'|'mood';name:string;icon?:string|null;sort_order:number;parent_id?:string|null;transaction_kind?:'expense'|'income'|null}
+type BalanceAdjustment={id:string;account_id:string;amount:number|string;balance_before:number|string;balance_after:number|string;note:string;created_at:string}
 type SettingsRow={nickname:string;default_currency:string}
 
 const money=(n:number,c='TWD')=>new Intl.NumberFormat('zh-TW',{style:'currency',currency:c,maximumFractionDigits:0}).format(n||0)
@@ -26,20 +27,22 @@ export default function App(){
   const[journals,setJournals]=useState<Journal[]>([])
   const[categories,setCategories]=useState<Category[]>([])
   const[settings,setSettings]=useState<SettingsRow>({nickname:'',default_currency:'TWD'})
+  const[adjustments,setAdjustments]=useState<BalanceAdjustment[]>([])
   const[msg,setMsg]=useState('')
 
   useEffect(()=>{supabase.auth.getSession().then(x=>setUser(x.data.session?.user));const{data}=supabase.auth.onAuthStateChange((_e,s)=>setUser(s?.user));return()=>data.subscription.unsubscribe()},[])
   const load=async()=>{
     if(!user)return
-    const[a,t,d,j,c,s]=await Promise.all([
+    const[a,t,d,j,c,s,ba]=await Promise.all([
       supabase.from('accounts').select('*').order('sort_order').order('created_at'),
       supabase.from('transactions').select('*').order('occurred_at',{ascending:false}),
       supabase.from('todos').select('*').order('due_at'),
       supabase.from('journal_entries').select('*').order('entry_date',{ascending:false}),
       supabase.from('user_categories').select('*').order('sort_order'),
       supabase.from('user_settings').select('nickname,default_currency').eq('user_id',user.id).maybeSingle(),
+      supabase.from('balance_adjustments').select('*').order('created_at',{ascending:false}),
     ])
-    setAccounts(a.data||[]);setTxs(t.data||[]);setTodos(d.data||[]);setJournals(j.data||[]);setCategories(c.data||[])
+    setAccounts(a.data||[]);setTxs(t.data||[]);setTodos(d.data||[]);setJournals(j.data||[]);setCategories(c.data||[]);setAdjustments(ba.data||[])
     if(s.data)setSettings(s.data)
   }
   useEffect(()=>{if(!user)return;load();const channel=supabase.channel('wealthlife-sync').on('postgres_changes',{event:'*',schema:'public'},load).subscribe();return()=>{supabase.removeChannel(channel)}},[user])
@@ -55,7 +58,7 @@ export default function App(){
 
   return <div className="shell"><aside><div className="brand"><CircleDollarSign/>財日記</div>{nav.map(([id,Icon,label])=><button className={view===id?'active':''} onClick={()=>setView(id)} key={id}><Icon size={19}/>{label}</button>)}<button className="logout" onClick={()=>supabase.auth.signOut()}><LogOut size={18}/>登出</button></aside><main><header><div><small>{settings.nickname?`${settings.nickname}・跨裝置同步`:'跨裝置同步'}</small><h1>{labels[view]}</h1></div><div className="header-actions"><span className="status">● 已連線</span><button className={"settings-corner "+(view==='settings'?'on':'')} title="設定" aria-label="設定" onClick={()=>setView('settings')}><Settings size={21}/></button></div></header>{msg&&<div className="toast">{msg}</div>}
     {view==='home'&&<Home net={net} income={income} expense={expense} accounts={accounts}/>} 
-    {view==='accounts'&&<AccountsPage user={user} accounts={accounts} txs={txs} done={done}/>} 
+    {view==='accounts'&&<AccountsPage user={user} accounts={accounts} txs={txs} adjustments={adjustments} done={done}/>} 
     {view==='ledger'&&<Ledger user={user} accounts={accounts} txs={txs} categories={categories} defaultCurrency={settings.default_currency} done={done}/>} 
     {view==='todo'&&<Todos user={user} items={todos} categories={categories} done={done}/>} 
     {view==='journal'&&<JournalPage user={user} items={journals} categories={categories} done={done}/>} 
@@ -75,33 +78,30 @@ function Home({net,income,expense,accounts}:any){
 }
 function Card(p:any){return <section className={'card '+p.c}><span>{p.t}</span><b>{p.v}</b></section>}
 
-function AccountsPage({user,accounts,txs,done}:any){
-  const[selected,setSelected]=useState<Account|undefined>();const[adding,setAdding]=useState(false);const[sorting,setSorting]=useState(false);const[draggingAccount,setDraggingAccount]=useState('')
-  const[name,setName]=useState('');const[kind,setKind]=useState('bank');const[currency,setCurrency]=useState('TWD');const[balance,setBalance]=useState('0')
+function AccountsPage({user,accounts,txs,adjustments,done}:any){
+  const[selectedId,setSelectedId]=useState('');const[adding,setAdding]=useState(false);const[editingAccount,setEditingAccount]=useState(false);const[sorting,setSorting]=useState(false);const[draggingAccount,setDraggingAccount]=useState('')
+  const[name,setName]=useState('');const[kind,setKind]=useState('bank');const[currency,setCurrency]=useState('TWD');const[balance,setBalance]=useState('0');const[editName,setEditName]=useState('');const[editInitial,setEditInitial]=useState('0');const[editBalance,setEditBalance]=useState('0')
   const ordered=useMemo(()=>[...accounts].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)),[accounts])
-  async function add(e:FormEvent){e.preventDefault();const{error}=await supabase.from('accounts').insert({user_id:user.id,name,kind,currency,balance:Number(balance),sort_order:ordered.length});if(error)return alert(error.message);setAdding(false);setName('');setBalance('0');done('帳戶已新增')}
+  const selected=accounts.find((a:Account)=>a.id===selectedId)
+  async function add(e:FormEvent){e.preventDefault();const numeric=Number(balance);const{error}=await supabase.from('accounts').insert({user_id:user.id,name,kind,currency,balance:numeric,initial_balance:numeric,sort_order:ordered.length});if(error)return alert(error.message);setAdding(false);setName('');setBalance('0');done('帳戶已新增')}
+  function openAccountEditor(){if(!selected)return;setEditName(selected.name);setEditInitial(String(selected.initial_balance??selected.balance));setEditBalance(String(selected.balance));setEditingAccount(true)}
+  async function saveAccount(e:FormEvent){e.preventDefault();if(!selected)return;const initial=Number(editInitial),latest=Number(editBalance);if(!editName.trim())return done('請輸入帳戶名稱');if(!Number.isFinite(initial)||!Number.isFinite(latest))return done('請輸入正確金額');try{const{error}=await supabase.rpc('update_account_details',{p_account_id:selected.id,p_name:editName.trim(),p_initial_balance:initial,p_latest_balance:latest});if(error)throw error;setEditingAccount(false);done(latest===Number(selected.balance)?'帳戶資料已更新':'帳戶資料已更新，餘額差值已計入沖帳調整')}catch(error:any){done(`帳戶更新失敗：${error?.message||'無法連線到資料庫'}`)}}
   async function dropAccount(targetId:string){
     if(!draggingAccount||draggingAccount===targetId)return
-    const from=ordered.findIndex((x:Account)=>x.id===draggingAccount)
-    const to=ordered.findIndex((x:Account)=>x.id===targetId)
+    const from=ordered.findIndex((x:Account)=>x.id===draggingAccount),to=ordered.findIndex((x:Account)=>x.id===targetId)
     if(from<0||to<0){setDraggingAccount('');return}
-    const reordered=[...ordered]
-    const[moved]=reordered.splice(from,1)
-    reordered.splice(to,0,moved)
-    setDraggingAccount('')
-    try{
-      const items=reordered.map((x:Account,i:number)=>({id:x.id,sort_order:(i+1)*100}))
-      const{error}=await supabase.rpc('reorder_accounts',{items})
-      if(error)throw error
-      done('帳戶順序已更新')
-    }catch(error:any){
-      done(`排序失敗：${error?.message||'無法連線到資料庫'}`)
-    }
+    const reordered=[...ordered];const[moved]=reordered.splice(from,1);reordered.splice(to,0,moved);setDraggingAccount('')
+    try{const items=reordered.map((x:Account,i:number)=>({id:x.id,sort_order:(i+1)*100}));const{error}=await supabase.rpc('reorder_accounts',{items});if(error)throw error;done('帳戶順序已更新')}catch(error:any){done(`排序失敗：${error?.message||'無法連線到資料庫'}`)}
   }
-  if(selected){const rows=txs.filter((x:Tx)=>x.account_id===selected.id);return <><button className="back" onClick={()=>setSelected(undefined)}><ArrowLeft size={18}/>所有帳戶</button><section className="hero"><span>{selected.name}</span><strong>{money(Number(selected.balance),selected.currency)}</strong></section><section className="panel"><h2>帳戶明細</h2>{rows.length?rows.map((x:Tx)=><div className="row" key={x.id}><span>{x.note||({expense:'支出',income:'收入',transfer:'轉帳'} as any)[x.kind]}<small>{new Date(x.occurred_at).toLocaleString('zh-TW')}</small></span><b className={x.kind}>{x.kind==='expense'?'-':x.kind==='income'?'+':''}{money(Number(x.amount),x.currency)}</b></div>):<p className="empty">尚無明細</p>}</section></>}
-  return <><div className="page-tools"><span>共 {ordered.length} 個帳戶</span><div><button className={'iconbtn '+(sorting?'on':'')} title="編輯順序" onClick={()=>setSorting(!sorting)}><Menu/></button></div></div><section className={"panel account-list "+(sorting?"sorting":"")}>{ordered.map((a:Account)=><div className="account-row" draggable={sorting} onDragStart={()=>setDraggingAccount(a.id)} onDragOver={e=>sorting&&e.preventDefault()} onDrop={()=>sorting&&dropAccount(a.id)} key={a.id}>{sorting&&<GripVertical className="account-grip"/>}<button className="account-main" onClick={()=>!sorting&&setSelected(a)}><span>{a.name}<small>{a.kind}・{a.currency}</small></span><b>{money(Number(a.balance),a.currency)}</b></button></div>)}</section><button className="floating-add" title="新增帳戶" aria-label="新增帳戶" onClick={()=>setAdding(true)}><Plus/></button>{adding&&<div className="modal"><form className="panel" onSubmit={add}><button type="button" className="modal-close" onClick={()=>setAdding(false)}><X/></button><h2>新增帳戶</h2><input placeholder="帳戶名稱" value={name} onChange={e=>setName(e.target.value)} required/><select value={kind} onChange={e=>setKind(e.target.value)}><option value="cash">現金</option><option value="bank">銀行</option><option value="debit_card">簽帳卡</option><option value="credit_card">信用卡</option><option value="transit_card">電子票證</option><option value="gift_card">禮物卡</option></select><select value={currency} onChange={e=>setCurrency(e.target.value)}>{['TWD','USD','JPY','KRW','EUR'].map(x=><option key={x}>{x}</option>)}</select><input type="number" step="0.01" value={balance} onChange={e=>setBalance(e.target.value)} placeholder="初始餘額"/><button>新增帳戶</button></form></div>}</>
+  if(selected){
+    const rows=[
+      ...txs.filter((x:Tx)=>x.account_id===selected.id||x.transfer_to_account_id===selected.id).map((x:Tx)=>({...x,rowType:'transaction',sortDate:x.occurred_at})),
+      ...adjustments.filter((x:BalanceAdjustment)=>x.account_id===selected.id).map((x:BalanceAdjustment)=>({...x,rowType:'adjustment',sortDate:x.created_at}))
+    ].sort((a:any,b:any)=>new Date(b.sortDate).getTime()-new Date(a.sortDate).getTime())
+    return <><div className="account-detail-tools"><button className="back" onClick={()=>setSelectedId('')}><ArrowLeft size={18}/>所有帳戶</button><button className="account-edit-button" onClick={openAccountEditor}><Pencil size={17}/>編輯</button></div><section className="hero"><span>{selected.name}</span><strong>{money(Number(selected.balance),selected.currency)}</strong><small>最初金額 {money(Number(selected.initial_balance??selected.balance),selected.currency)}</small></section><section className="panel"><h2>帳戶明細</h2>{rows.length?rows.map((x:any)=>x.rowType==='adjustment'?<div className="row adjustment-row" key={'adjustment-'+x.id}><span>沖帳調整<small>{new Date(x.created_at).toLocaleString('zh-TW')}・調整前 {money(Number(x.balance_before),selected.currency)}</small></span><b className="adjustment">{Number(x.amount)>=0?'+':''}{money(Number(x.amount),selected.currency)}</b></div>:<div className="row" key={x.id}><span>{x.note||({expense:'支出',income:'收入',transfer:'轉帳'} as any)[x.kind]}<small>{new Date(x.occurred_at).toLocaleString('zh-TW')}</small></span><b className={x.kind}>{x.kind==='expense'?'-':x.kind==='income'?'+':''}{money(Number(x.amount),x.currency)}</b></div>):<p className="empty">尚無明細</p>}</section>{editingAccount&&<div className="modal"><form className="panel account-edit-modal" onSubmit={saveAccount}><button type="button" className="modal-close" onClick={()=>setEditingAccount(false)}><X/></button><h2>編輯帳戶</h2><label>帳戶名稱<input value={editName} onChange={e=>setEditName(e.target.value)} required/></label><label>最初金額<input type="number" step="0.01" value={editInitial} onChange={e=>setEditInitial(e.target.value)} required/></label><label>最新餘額<input type="number" step="0.01" value={editBalance} onChange={e=>setEditBalance(e.target.value)} required/></label><small className="adjustment-hint">最新餘額與目前餘額的差值會記入「沖帳調整」，不列入收入或支出。</small><button>儲存修改</button></form></div>}</>
+  }
+  return <><div className="page-tools"><span>共 {ordered.length} 個帳戶</span><div><button className={'iconbtn '+(sorting?'on':'')} title="編輯順序" onClick={()=>setSorting(!sorting)}><Menu/></button></div></div><section className={'panel account-list '+(sorting?'sorting':'')}>{ordered.map((a:Account)=><div className="account-row" draggable={sorting} onDragStart={()=>setDraggingAccount(a.id)} onDragOver={e=>sorting&&e.preventDefault()} onDrop={()=>sorting&&dropAccount(a.id)} key={a.id}>{sorting&&<GripVertical className="account-grip"/>}<button className="account-main" onClick={()=>!sorting&&setSelectedId(a.id)}><span>{a.name}<small>{a.kind}・{a.currency}</small></span><b>{money(Number(a.balance),a.currency)}</b></button></div>)}</section><button className="floating-add" title="新增帳戶" aria-label="新增帳戶" onClick={()=>setAdding(true)}><Plus/></button>{adding&&<div className="modal"><form className="panel" onSubmit={add}><button type="button" className="modal-close" onClick={()=>setAdding(false)}><X/></button><h2>新增帳戶</h2><input placeholder="帳戶名稱" value={name} onChange={e=>setName(e.target.value)} required/><select value={kind} onChange={e=>setKind(e.target.value)}><option value="cash">現金</option><option value="bank">銀行</option><option value="debit_card">簽帳卡</option><option value="credit_card">信用卡</option><option value="transit_card">電子票證</option><option value="gift_card">禮物卡</option></select><select value={currency} onChange={e=>setCurrency(e.target.value)}>{['TWD','USD','JPY','KRW','EUR'].map(x=><option key={x}>{x}</option>)}</select><input type="number" step="0.01" value={balance} onChange={e=>setBalance(e.target.value)} placeholder="初始餘額"/><button>新增帳戶</button></form></div>}</>
 }
-
 function Ledger({user,accounts,txs,categories,defaultCurrency,done}:any){
   const[editor,setEditor]=useState(false),[editing,setEditing]=useState<Tx|undefined>(),[kind,setKind]=useState<'expense'|'income'|'transfer'>('expense'),[amount,setAmount]=useState(''),[account,setAccount]=useState(accounts[0]?.id||''),[transferTo,setTransferTo]=useState(''),[note,setNote]=useState(''),[currency,setCurrency]=useState(defaultCurrency||'TWD'),[category,setCategory]=useState(''),[parent,setParent]=useState(''),[occurred,setOccurred]=useState(new Date().toISOString().slice(0,16)),[expression,setExpression]=useState(''),[swiped,setSwiped]=useState(''),[touchX,setTouchX]=useState(0),[feeEnabled,setFeeEnabled]=useState(false),[fee,setFee]=useState(''),[baseAmount,setBaseAmount]=useState(''),[exchangeRate,setExchangeRate]=useState(1),[fxLoading,setFxLoading]=useState(false),[fxSource,setFxSource]=useState('')
   const all=categories.filter((x:Category)=>x.scope==='transaction'&&x.transaction_kind===kind),parents=kind==='expense'?all.filter((x:Category)=>!x.parent_id):[],children=kind==='expense'?all.filter((x:Category)=>x.parent_id===parent):all
