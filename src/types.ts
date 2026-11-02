@@ -1,1 +1,6 @@
-export type Account={id:string;user_id:string;name:string;kind:'cash'|'bank'|'transit'|'giftCard'|'liability';currency:string;balance:number};export type Tx={id:string;user_id:string;kind:'expense'|'income'|'transfer';amount:number;currency:string;account_id:string;to_account_id?:string|null;category_id?:string|null;note:string;occurred_at:string;is_reimbursable:boolean;is_advance:boolean};export type Todo={id:string;user_id:string;title:string;due_at:string;remind_before_minutes:number;location_name?:string|null;note:string;is_done:boolean};export type Journal={id:string;user_id:string;entry_date:string;mood:string;body:string;image_paths:string[];cover_path?:string|null};
+export type SyncState='synced'|'pending'|'failed'
+export type TableName='accounts'|'transactions'|'todos'|'journal_entries'|'user_categories'|'user_settings'|'balance_adjustments'
+export type MutationAction='insert'|'update'|'upsert'|'delete'|'rpc'
+export interface LocalRow {id?:string;user_id?:string;updated_at?:string;_sync?:SyncState;_deleted?:boolean}
+export interface SyncJob {id:string;userId:string;table:TableName|'rpc';action:MutationAction;recordId?:string;rpcName?:string;payload:any;match?:Record<string,unknown>;createdAt:string;attempts:number;lastError?:string}
+export interface OfflineSnapshot {accounts:any[];transactions:any[];todos:any[];journal_entries:any[];user_categories:any[];user_settings:any[];balance_adjustments:any[]}
