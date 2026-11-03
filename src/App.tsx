@@ -161,10 +161,10 @@ function AccountsPage({user,accounts,txs,adjustments,done}:any){
     if(savingReward)return
     setSavingReward(true)
     try{
-      const updatedAt=new Date().toISOString()
-      const{data,error}=await supabase.from('credit_card_reward_points').update({status:'confirmed',updated_at:updatedAt}).eq('id',x.id).select('*').single()
+      const{data,error}=await supabase.rpc('confirm_credit_card_reward_point',{p_reward_id:x.id})
       if(error)throw error
-      setRewardPoints(current=>current.map(item=>item.id===x.id?(data||{...item,status:'confirmed',updated_at:updatedAt}):item))
+      const saved=(Array.isArray(data)?data[0]:data) as RewardPoint|undefined
+      setRewardPoints(current=>current.map(item=>item.id===x.id?(saved||{...item,status:'confirmed',updated_at:new Date().toISOString()}):item))
       done('台新點數已確認',false)
       void loadRewardPoints(x.account_id,false)
     }catch(error:any){done(`確認失敗：${rewardErrorMessage(error)}`,false)}finally{setSavingReward(false)}
@@ -176,11 +176,15 @@ function AccountsPage({user,accounts,txs,adjustments,done}:any){
     if(!Number.isFinite(points)||points<0)return done('請輸入正確的整數點數。',false)
     setSavingReward(true)
     try{
-      const updatedAt=new Date().toISOString()
-      const payload={plan_name:editingReward.plan_name.trim(),points,note:(editingReward.note||'').trim(),status:editingReward.status,updated_at:updatedAt}
-      const{data,error}=await supabase.from('credit_card_reward_points').update(payload).eq('id',editingReward.id).select('*').single()
+      const{data,error}=await supabase.rpc('update_credit_card_reward_point',{
+        p_reward_id:editingReward.id,
+        p_plan_name:editingReward.plan_name.trim(),
+        p_points:points,
+        p_status:editingReward.status,
+        p_note:(editingReward.note||'').trim(),
+      })
       if(error)throw error
-      const saved=data||{...editingReward,...payload}
+      const saved=((Array.isArray(data)?data[0]:data)||{...editingReward,plan_name:editingReward.plan_name.trim(),points,status:editingReward.status,note:(editingReward.note||'').trim(),updated_at:new Date().toISOString()}) as RewardPoint
       setRewardPoints(current=>current.map(item=>item.id===editingReward.id?saved:item))
       const rewardAccountId=editingReward.account_id
       setEditingReward(null)
@@ -192,7 +196,7 @@ function AccountsPage({user,accounts,txs,adjustments,done}:any){
     if(savingReward||!confirm('確定刪除這筆點數明細？'))return
     setSavingReward(true)
     try{
-      const{error}=await supabase.from('credit_card_reward_points').delete().eq('id',x.id)
+      const{error}=await supabase.rpc('delete_credit_card_reward_point',{p_reward_id:x.id})
       if(error)throw error
       setRewardPoints(current=>current.filter(item=>item.id!==x.id))
       done('點數明細已刪除',false)
