@@ -224,55 +224,5 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
   }
 }
 
-/* Account list: rounded bank icon and stacked account details */
-.account-main{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-}
-.account-name-wrap{
-  display:flex!important;
-  align-items:center!important;
-  gap:14px!important;
-  min-width:0!important;
-  flex:1 1 auto!important;
-}
-.account-name-wrap>.account-logo{
-  display:grid!important;
-  place-items:center!important;
-  flex:0 0 auto!important;
-  border-radius:12px!important;
-  object-fit:cover!important;
-  overflow:hidden!important;
-}
-.account-logo-fallback{
-  background:#1c1c1c!important;
-  border:1px solid #303030!important;
-}
-.account-name-wrap>span:last-child{
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:flex-start!important;
-  justify-content:center!important;
-  min-width:0!important;
-  line-height:1.25!important;
-  font-weight:600!important;
-}
-.account-name-wrap>span:last-child>small{
-  display:block!important;
-  margin-top:5px!important;
-  color:#8f8f8f!important;
-  font-size:13px!important;
-  font-weight:500!important;
-  line-height:1.25!important;
-}
-.account-main>b{
-  flex:0 0 auto!important;
-  margin-left:18px!important;
-  text-align:right!important;
-}
-@media(max-width:600px){
-  .account-name-wrap{gap:12px!important}
-  .account-name-wrap>.account-logo{border-radius:10px!important}
-  .account-main>b{margin-left:12px!important}
-}
+/* Richart reward points */
+.reward-summary{margin-top:16px}.reward-summary-button{width:100%;display:flex;align-items:center;justify-content:space-between;border:0;background:transparent!important;color:#fff;text-align:left;padding:4px;cursor:pointer}.reward-summary-button span:first-child{display:flex;flex-direction:column}.reward-summary-button small,.reward-row small,.reward-plan-field small{display:block;color:#8f8f8f;margin-top:4px}.reward-summary-button strong{font-size:30px;margin-top:4px}.reward-list{margin-top:16px;border-top:1px solid #292929}.reward-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid #292929}.reward-row>div:first-child{min-width:0}.reward-actions{display:flex;gap:7px}.reward-actions button{padding:7px 10px}.danger-text{color:#ff7777!important}.reward-edit-modal{width:min(460px,100%)}.reward-plan-field{display:block;color:#aaa;font-size:13px}.reward-plan-field select{margin-top:7px}.reward-plan-field small{line-height:1.45}@media(max-width:700px){.reward-row{grid-template-columns:1fr auto}.reward-actions{grid-column:1/-1;justify-content:flex-end}.reward-summary-button{align-items:flex-end}}
