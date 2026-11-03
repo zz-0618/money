@@ -272,7 +272,7 @@ function MorePage({quickNav,featureOrder,featureDefs,onOpen,user,done}:any){
   const[order,setOrder]=useState<string[]>(featureOrder),[dragging,setDragging]=useState('')
   useEffect(()=>setOrder(featureOrder),[featureOrder.join('|')])
   const items=order.filter(id=>!quickNav.includes(id))
-  async function drop(target:string){if(!dragging||dragging===target)return;const next=[...order],from=next.indexOf(dragging),to=next.indexOf(target);if(from<0||to<0)return;next.splice(to,0,next.splice(from,1)[0]);setOrder(next);setDragging('');const{error}=await supabase.from('user_settings').update({feature_order:next,updated_at:new Date().toISOString()}).eq('user_id',user.id);done(error?`排序儲存失敗：${error.message}`:'功能順序已更新')}
+  async function drop(target:string){if(!dragging||dragging===target)return;const next=[...order],from=next.indexOf(dragging),to=next.indexOf(target);if(from<0||to<0)return;next.splice(to,0,next.splice(from,1)[0]);setOrder(next);setDragging('');const{error}=await supabase.rpc('update_feature_order',{p_feature_order:next});done(error?`排序儲存失敗：${error.message}`:'功能順序已更新')}
   return <section className="panel more-page"><div className="more-head"><div><h2>更多功能</h2><small>長按或拖曳入口即可調整順序</small></div></div><div className="feature-grid">{items.map(id=>{const[Icon,label]=featureDefs[id];return <button type="button" draggable onDragStart={()=>setDragging(id)} onDragOver={e=>e.preventDefault()} onDrop={()=>drop(id)} onClick={()=>onOpen(id)} key={id}><span><Icon size={28}/></span><b>{label}</b></button>})}</div></section>
 }
 
