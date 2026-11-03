@@ -244,3 +244,6 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Credit card limit and repayment */
 .credit-card-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:18px;align-items:center;margin-bottom:16px}.credit-card-summary>div{min-width:0}.credit-card-summary small{color:#8d8d8d}.credit-card-summary strong{display:block;margin-top:5px;color:#fff;font-size:18px}.credit-card-summary>button{white-space:nowrap}.repayment-modal{width:min(440px,100%)}.repayment-modal label{display:block;margin:10px 0;color:#aaa;font-size:13px}@media(max-width:800px){.credit-card-summary{grid-template-columns:1fr 1fr}.credit-card-summary>button{grid-column:1/-1}}
+
+/* Repayment history and expense colors */
+.transaction-main strong.expense,.account-tx-row b.expense{color:#ff5f5f!important}.repayment-row .repayment,.repayment-ledger-row .repayment{color:#7ee7a8!important}.repayment-ledger-row{width:100%;border:0;border-bottom:1px solid #252525;background:transparent!important;color:#fff;padding:17px 0;display:flex;align-items:center;justify-content:space-between;text-align:left}.repayment-ledger-row span{min-width:0}.repayment-ledger-row strong{white-space:nowrap;margin-left:16px}
