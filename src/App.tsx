@@ -44,7 +44,7 @@ const ACCOUNT_PRESETS={
   ],
 } as const
 const ALL_ACCOUNT_PRESETS=[...ACCOUNT_PRESETS.bank,...ACCOUNT_PRESETS.credit_card]
-function AccountLogo({iconKey,name,size=42,kind}:any){const preset=ALL_ACCOUNT_PRESETS.find(x=>x.key===iconKey);return preset?<span className={'account-logo-frame '+(kind==='credit_card'?'credit-card-logo-frame':'')} style={{width:kind==='credit_card'?Math.round(size*1.58):size,height:size}}><img className="account-logo" src={preset.logo} alt={name||preset.name}/></span>:<span className="account-logo-frame account-logo-fallback" style={{width:size,height:size}}><Landmark size={Math.round(size*.52)}/></span>}
+function AccountLogo({iconKey,name,size=42,kind}:any){const preset=ALL_ACCOUNT_PRESETS.find(x=>x.key===iconKey);return preset?<span className={'account-logo-frame '+(kind==='credit_card'?'credit-card-logo-frame':'')} style={{width:size,height:kind==='credit_card'?Math.round(size*1.42):size}}><img className="account-logo" src={preset.logo} alt={name||preset.name}/></span>:<span className="account-logo-frame account-logo-fallback" style={{width:size,height:size}}><Landmark size={Math.round(size*.52)}/></span>}
 
 export default function App(){
   const[user,setUser]=useState<any>()
