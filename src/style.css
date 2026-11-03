@@ -235,3 +235,6 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Full transaction editor from account details */
 .account-tx-row{width:100%;border-left:0!important;border-right:0!important;border-bottom:0!important;background:transparent!important;color:#fff!important;text-align:left!important;cursor:pointer}.account-tx-row:hover{background:#171717!important}.account-tx-row b{margin-left:16px;white-space:nowrap}.account-tx-row b.expense{color:#ff5f5f!important}
+
+/* Account details: base currency primary, foreign currency secondary */
+.account-tx-row b.expense{color:#ff5f5f!important}.account-tx-row .original-money{display:block!important;margin-top:4px!important;color:#8f8f8f!important;font-size:12px!important;font-weight:500!important;text-align:right!important}
