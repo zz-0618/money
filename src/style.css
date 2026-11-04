@@ -966,3 +966,121 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
   .panel .account-tx-row{padding:14px 10px!important;gap:10px!important}
   .transaction-list .transaction-main.repayment-ledger-row{padding:14px 12px!important}
 }
+
+/* FINAL ledger typography + repayment layout parity across desktop/mobile */
+.transaction-list .transaction-main{
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+}
+.transaction-list .transaction-main>span{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.transaction-list .transaction-main>span>b{
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  color:#fff!important;
+  font-size:inherit!important;
+  font-weight:400!important;
+  line-height:1.4!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.transaction-list .transaction-main>span>b .fee-inline{
+  font-weight:400!important;
+}
+.transaction-list .transaction-main>span>small{
+  display:block!important;
+  margin-top:5px!important;
+  color:#8f8f8f!important;
+  font-weight:400!important;
+  line-height:1.35!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.transaction-list .transaction-main>strong{
+  flex:0 0 auto!important;
+  min-width:0!important;
+  margin-left:14px!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+/* Repayment uses exactly the same row frame rather than its old oversized button frame. */
+.transaction-list .transaction-main.repayment-ledger-row{
+  position:relative!important;
+  z-index:auto!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:17px 28px!important;
+  border:0!important;
+  border-bottom:1px solid #292929!important;
+  border-radius:0!important;
+  background:transparent!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  overflow:hidden!important;
+  text-align:left!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span{
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span>b{
+  font-weight:400!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>strong{
+  flex:0 0 auto!important;
+  max-width:46%!important;
+  margin:0 0 0 auto!important;
+  font-weight:700!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+@media(max-width:600px){
+  .transaction-list .transaction-main{
+    padding-left:22px!important;
+    padding-right:22px!important;
+  }
+  .transaction-list .transaction-main>span>b{
+    font-size:16px!important;
+    font-weight:400!important;
+  }
+  .transaction-list .transaction-main>span>small{
+    font-size:14px!important;
+    font-weight:400!important;
+  }
+  .transaction-list .transaction-main>strong{
+    max-width:42%!important;
+    margin-left:10px!important;
+    font-size:16px!important;
+  }
+  .transaction-list .transaction-main.repayment-ledger-row{
+    padding:17px 22px!important;
+    gap:10px!important;
+  }
+  .transaction-list .transaction-main.repayment-ledger-row>span{
+    flex:1 1 0!important;
+    min-width:0!important;
+  }
+  .transaction-list .transaction-main.repayment-ledger-row>strong{
+    flex:0 0 auto!important;
+    width:auto!important;
+    max-width:42%!important;
+    margin-left:10px!important;
+    font-size:16px!important;
+  }
+}
