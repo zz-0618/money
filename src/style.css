@@ -824,3 +824,40 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* FINAL fee field override: no labels/help text, large visible amount box */
 .card-fee-option{display:grid!important;grid-template-columns:112px minmax(260px,1fr)!important;gap:16px!important;align-items:center!important;width:100%!important;max-width:100%!important;overflow:visible!important}.card-fee-option .fee-toggle{width:112px!important;height:58px!important;min-height:58px!important;margin:0!important}.card-fee-option>.card-fee-input{display:block!important;width:100%!important;min-width:260px!important;max-width:none!important;height:58px!important;min-height:58px!important;margin:0!important;padding:0 18px!important;border:1px solid #3a3a3a!important;border-radius:14px!important;background:#080808!important;color:#fff!important;font-size:24px!important;font-weight:800!important;line-height:58px!important;text-align:left!important;opacity:1!important;visibility:visible!important;box-sizing:border-box!important}.card-fee-option>.card-fee-input::placeholder{color:#666!important;font-size:20px!important}.card-fee-option>label,.card-fee-option>small{display:none!important}@media(max-width:600px){.card-fee-option{grid-template-columns:100px minmax(160px,1fr)!important;gap:10px!important}.card-fee-option .fee-toggle{width:100px!important;height:54px!important;min-height:54px!important}.card-fee-option>.card-fee-input{min-width:160px!important;height:54px!important;min-height:54px!important;font-size:22px!important;line-height:54px!important}}
+
+/* FINAL fee alignment: right edge matches note/date and amount fields */
+.transaction-modal .card-fee-option{
+  display:grid!important;
+  grid-template-columns:126px minmax(0,1fr)!important;
+  gap:16px!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  align-items:center!important;
+  overflow:hidden!important;
+}
+.transaction-modal .card-fee-option .fee-toggle{
+  width:126px!important;
+  min-width:126px!important;
+  max-width:126px!important;
+  margin:0!important;
+}
+.transaction-modal .card-fee-option>.card-fee-input{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  justify-self:stretch!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+}
+@media(max-width:600px){
+  .transaction-modal .card-fee-option{
+    grid-template-columns:112px minmax(0,1fr)!important;
+    gap:10px!important;
+  }
+  .transaction-modal .card-fee-option .fee-toggle{
+    width:112px!important;
+    min-width:112px!important;
+    max-width:112px!important;
+  }
+}
