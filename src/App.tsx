@@ -204,43 +204,30 @@ function AccountsPage({user,accounts,txs,adjustments,repayments,categories,defau
     if(savingReward)return
     setSavingReward(true)
     try{
-      const updatedAt=new Date().toISOString()
-      const{data,error}=await supabase.from('credit_card_reward_points').update({status:'confirmed',updated_at:updatedAt}).eq('id',x.id).select('*').single()
+      const{data,error}=await supabase.rpc('confirm_credit_card_reward_point',{p_reward_id:x.id})
       if(error)throw error
-      setRewardPoints(current=>current.map(item=>item.id===x.id?(data||{...item,status:'confirmed',updated_at:updatedAt}):item))
+      const saved=(Array.isArray(data)?data[0]:data) as RewardPoint|undefined
+      setRewardPoints(current=>current.map(item=>item.id===x.id?(saved||{...item,status:'confirmed',updated_at:new Date().toISOString()}):item))
       done('台新點數已確認',false)
       void loadRewardPoints(x.account_id,false)
     }catch(error:any){done(`確認失敗：${rewardErrorMessage(error)}`,false)}finally{setSavingReward(false)}
   }
   async function saveReward(e:FormEvent){
-    e.preventDefault()
-    if(!editingReward||savingReward)return
-    const points=Math.floor(Number(editingReward.points))
-    if(!Number.isFinite(points)||points<0)return done('請輸入正確的整數點數。',false)
+    e.preventDefault();if(!editingReward||savingReward)return
+    const points=Math.floor(Number(editingReward.points));if(!Number.isFinite(points)||points<0)return done('請輸入正確的整數點數。',false)
     setSavingReward(true)
     try{
-      const updatedAt=new Date().toISOString()
-      const payload={plan_name:editingReward.plan_name.trim(),points,note:(editingReward.note||'').trim(),status:editingReward.status,updated_at:updatedAt}
-      const{data,error}=await supabase.from('credit_card_reward_points').update(payload).eq('id',editingReward.id).select('*').single()
+      const{data,error}=await supabase.rpc('update_credit_card_reward_point',{p_reward_id:editingReward.id,p_plan_name:editingReward.plan_name.trim(),p_points:points,p_status:editingReward.status,p_note:(editingReward.note||'').trim()})
       if(error)throw error
-      const saved=data||{...editingReward,...payload}
+      const saved=((Array.isArray(data)?data[0]:data)||{...editingReward,plan_name:editingReward.plan_name.trim(),points,status:editingReward.status,note:(editingReward.note||'').trim(),updated_at:new Date().toISOString()}) as RewardPoint
       setRewardPoints(current=>current.map(item=>item.id===editingReward.id?saved:item))
-      const rewardAccountId=editingReward.account_id
-      setEditingReward(null)
-      done('點數明細已修改',false)
-      void loadRewardPoints(rewardAccountId,false)
+      const accountId=editingReward.account_id;setEditingReward(null);done('點數明細已修改',false);void loadRewardPoints(accountId,false)
     }catch(error:any){done(`點數修改失敗：${rewardErrorMessage(error)}`,false)}finally{setSavingReward(false)}
   }
   async function deleteReward(x:RewardPoint){
     if(savingReward||!confirm('確定刪除這筆點數明細？'))return
     setSavingReward(true)
-    try{
-      const{error}=await supabase.from('credit_card_reward_points').delete().eq('id',x.id)
-      if(error)throw error
-      setRewardPoints(current=>current.filter(item=>item.id!==x.id))
-      done('點數明細已刪除',false)
-      void loadRewardPoints(x.account_id,false)
-    }catch(error:any){done(`點數刪除失敗：${rewardErrorMessage(error)}`,false)}finally{setSavingReward(false)}
+    try{const{error}=await supabase.rpc('delete_credit_card_reward_point',{p_reward_id:x.id});if(error)throw error;setRewardPoints(current=>current.filter(item=>item.id!==x.id));done('點數明細已刪除',false);void loadRewardPoints(x.account_id,false)}catch(error:any){done(`點數刪除失敗：${rewardErrorMessage(error)}`,false)}finally{setSavingReward(false)}
   }
   async function saveRepayment(e:FormEvent){e.preventDefault();if(!selected)return;const amount=Number(repaymentAmount);if(!Number.isFinite(amount)||amount<=0)return done('請輸入正確還款金額',false);try{const{error}=await supabase.rpc('record_credit_card_repayment',{p_account_id:selected.id,p_amount:amount,p_occurred_at:new Date(repaymentDate+'T12:00:00').toISOString()});if(error)throw error;setRepaying(false);setRepaymentAmount('');done('信用卡還款已記錄')}catch(error:any){done(`還款失敗：${error?.message||'無法連線到資料庫'}`,false)}}
   if(selected){
