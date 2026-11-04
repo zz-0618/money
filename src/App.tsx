@@ -85,7 +85,7 @@ export default function App(){
   const transactionMonth=(value:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date(value))
   const currentMonthTxs=txs.filter(x=>transactionMonth(x.occurred_at)===currentMonth)
   const income=currentMonthTxs.filter(x=>x.kind==='income').reduce((sum,x)=>sum+Number(x.base_amount??x.amount),0)
-  const expense=currentMonthTxs.filter(x=>x.kind==='expense').reduce((sum,x)=>sum+Number(x.base_amount??x.amount),0)
+  const expense=currentMonthTxs.filter(x=>x.kind==='expense').reduce((sum,x)=>sum+Number(x.base_amount??x.amount)+Number(x.fee||0),0)
   const net=accounts.reduce((s,a)=>s+(a.kind==='liability'?-1:1)*Number(a.balance),0)
   const labels:any={home:'財務總覽',accounts:'帳戶',ledger:'記帳',todo:'待辦',journal:'日記',settings:'設定',travel:'旅遊',more:'更多功能'}
   const featureDefs:any={home:[LayoutDashboard,'總覽'],accounts:[Landmark,'帳戶'],ledger:[WalletCards,'記帳'],todo:[CheckCircle2,'待辦'],journal:[BookOpen,'日記'],travel:[Plane,'旅遊'],settings:[Settings,'設定']}
