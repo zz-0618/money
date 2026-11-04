@@ -600,3 +600,43 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Journal monthly navigation, editable dump entries */
 .monthly-dump-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}.monthly-dump-head h2{margin:0}.monthly-dump-head input[type="month"]{width:auto;min-width:160px;background:#080808;border:1px solid #303030;color:#fff;border-radius:11px;padding:9px 12px}.dump .dump-entry{aspect-ratio:1;border:0;border-radius:12px;background:#1b1b1b;color:#fff;padding:9px;display:flex;flex-direction:column;text-align:left;cursor:pointer}.dump .dump-entry:hover{background:#252525}.dump .dump-entry span{font-size:25px;margin:auto}.dump .dump-entry small{overflow:hidden;width:100%}.journal-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.journal-edit-actions button{margin:0!important}.month-shortcuts{display:flex;gap:7px;overflow:auto;margin-top:16px;padding-bottom:2px}.month-shortcuts button{border:1px solid #303030;border-radius:999px;background:#151515;color:#999;padding:7px 11px;white-space:nowrap}.month-shortcuts button.on{background:#fff;color:#050505}.monthly-empty{grid-column:1/-1}@media(max-width:600px){.monthly-dump-head{align-items:center}.monthly-dump-head input[type="month"]{min-width:145px;padding:8px 9px}.journal-edit-actions{grid-template-columns:1fr}}
+
+/* FIX: credit-card account editor must always expose the delete action */
+.modal:has(.account-edit-modal){
+  align-items:flex-start!important;
+  overflow-y:auto!important;
+  padding-top:max(24px,env(safe-area-inset-top))!important;
+  padding-bottom:max(24px,env(safe-area-inset-bottom))!important;
+}
+.account-edit-modal{
+  width:min(620px,calc(100vw - 32px))!important;
+  max-height:calc(100dvh - 48px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  padding-bottom:24px!important;
+  scrollbar-gutter:stable!important;
+}
+.account-edit-modal>.account-delete-button{
+  display:flex!important;
+  width:100%!important;
+  min-height:48px!important;
+  margin:10px 0 0!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  flex:0 0 auto!important;
+  position:relative!important;
+  z-index:2!important;
+}
+@media(max-width:800px){
+  .modal:has(.account-edit-modal){
+    padding:12px 10px calc(12px + env(safe-area-inset-bottom))!important;
+  }
+  .account-edit-modal{
+    width:100%!important;
+    max-height:calc(100dvh - 24px - env(safe-area-inset-bottom))!important;
+    padding-bottom:18px!important;
+  }
+}
