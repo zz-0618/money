@@ -1242,3 +1242,6 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 .panel .account-tx-title-line>.fee-inline{
   font-weight:400!important;
 }
+
+/* Credit-card repayment source account and optional fee */
+.repayment-modal label,.repayment-edit-form label{display:block;margin:10px 0;color:#aaa;font-size:13px}.repayment-modal select,.repayment-edit-form select{width:100%}.repayment-row .fee-inline{font-weight:400!important}.repayment-row>span,.repayment-ledger-row>span{min-width:0!important}
