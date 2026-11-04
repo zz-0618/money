@@ -1154,3 +1154,86 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
     justify-self:end!important;
   }
 }
+
+/* RECOVERY FIX: keep swipe delete hidden until swiped and align repayment exactly */
+.transaction-list .swipe-row{
+  position:relative!important;
+  overflow:hidden!important;
+  width:100%!important;
+  min-width:0!important;
+  border-top:1px solid #292929!important;
+  background:#101010!important;
+}
+.transaction-list .swipe-row:first-of-type{border-top:0!important}
+.transaction-list .swipe-row>.swipe-delete{
+  position:absolute!important;
+  z-index:1!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  width:82px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#d84242!important;
+  color:#fff!important;
+}
+.transaction-list .swipe-row>.transaction-main{
+  position:relative!important;
+  z-index:2!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:17px 28px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#101010!important;
+  transform:translateX(0)!important;
+  box-sizing:border-box!important;
+}
+.transaction-list .swipe-row.swiped>.transaction-main{
+  transform:translateX(-82px)!important;
+}
+/* Repayment is not a swipe row, but visually shares the exact same content edges. */
+.transaction-list>.transaction-main.repayment-ledger-row{
+  position:relative!important;
+  z-index:2!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:17px 28px!important;
+  border:0!important;
+  border-top:1px solid #292929!important;
+  border-bottom:1px solid #292929!important;
+  border-radius:0!important;
+  background:#101010!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:16px!important;
+  box-sizing:border-box!important;
+}
+.transaction-list>.transaction-main.repayment-ledger-row>span{
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
+}
+.transaction-list>.transaction-main.repayment-ledger-row>strong{
+  width:auto!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  justify-self:end!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+@media(max-width:600px){
+  .transaction-list .swipe-row>.transaction-main,
+  .transaction-list>.transaction-main.repayment-ledger-row{
+    padding:17px 22px!important;
+  }
+  .transaction-list>.transaction-main.repayment-ledger-row{
+    gap:10px!important;
+  }
+}
