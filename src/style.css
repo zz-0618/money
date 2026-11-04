@@ -266,3 +266,59 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 /* FINAL mobile account-logo containment + repayment row parity */
 .repayment-ledger-row.transaction-main{position:relative!important;z-index:2!important;width:100%!important;border:0!important;background:#101010!important;color:#fff!important;padding:17px 22px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;text-align:left!important;border-radius:0!important}.repayment-ledger-row.transaction-main>span{min-width:0!important}.repayment-ledger-row.transaction-main>span>b{display:block!important;color:#fff!important;font-size:inherit!important;font-weight:700!important;line-height:1.4!important}.repayment-ledger-row.transaction-main>span>small{display:block!important;color:#878787!important;margin-top:5px!important;font-size:inherit!important;font-weight:400!important}.repayment-ledger-row.transaction-main>strong{margin-left:16px!important;text-align:right!important;white-space:nowrap!important;font-size:inherit!important}.repayment-ledger-row.transaction-main .repayment{color:#7ee7a8!important}
 @media(max-width:800px){.account-list .account-row{position:relative!important;overflow:hidden!important;min-width:0!important}.account-list .account-main{width:100%!important;min-width:0!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;column-gap:10px!important;padding:16px 14px!important;overflow:hidden!important}.account-list .account-name-wrap{width:100%!important;min-width:0!important;display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;column-gap:10px!important;align-items:center!important;overflow:hidden!important}.account-list .account-logo-frame{grid-column:1!important;width:42px!important;height:42px!important;min-width:42px!important;max-width:42px!important;min-height:42px!important;max-height:42px!important;overflow:hidden!important;border-radius:10px!important;background:transparent!important;justify-self:start!important}.account-list .account-logo-frame>.account-logo{position:static!important;display:block!important;width:42px!important;height:42px!important;min-width:0!important;max-width:42px!important;min-height:0!important;max-height:42px!important;object-fit:contain!important;object-position:center!important;border-radius:10px!important;margin:0!important;padding:0!important;transform:none!important}.account-list .account-logo-frame.credit-card-logo-frame{width:40px!important;height:57px!important;min-width:40px!important;max-width:40px!important;min-height:57px!important;max-height:57px!important;background:#151515!important;border-radius:9px!important}.account-list .account-logo-frame.credit-card-logo-frame>.account-logo{width:40px!important;height:57px!important;max-width:40px!important;max-height:57px!important;border-radius:9px!important}.account-list .account-name-wrap>span:last-child{grid-column:2!important;min-width:0!important;width:100%!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;text-align:left!important}.account-list .account-name-wrap>span:last-child>small{width:100%!important;text-align:left!important}.account-list .account-main>b{justify-self:end!important;margin:0!important;white-space:nowrap!important}.account-list .account-logo-fallback{width:42px!important;height:42px!important;min-width:42px!important;max-width:42px!important;min-height:42px!important;max-height:42px!important}}
+
+/* FINAL mobile navigation distribution + vertically centered date input */
+@media(max-width:800px){
+  aside{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:none!important;
+    padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;
+    display:flex!important;
+    align-items:stretch!important;
+    justify-content:space-evenly!important;
+    gap:0!important;
+  }
+  aside>button:not(.logout){
+    flex:1 1 0!important;
+    width:0!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:8px 2px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+  aside>button:not(.logout).active{margin:0 2px!important}
+
+  input[type="date"]{
+    height:50px!important;
+    min-height:50px!important;
+    padding:0 14px!important;
+    line-height:50px!important;
+    display:block!important;
+    text-align:left!important;
+  }
+  input[type="date"]::-webkit-date-and-time-value{
+    height:50px!important;
+    line-height:50px!important;
+    min-height:50px!important;
+    text-align:left!important;
+    display:flex!important;
+    align-items:center!important;
+  }
+  input[type="date"]::-webkit-datetime-edit{
+    height:50px!important;
+    line-height:50px!important;
+    display:flex!important;
+    align-items:center!important;
+    padding:0!important;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator{
+    align-self:center!important;
+    margin:auto 0 auto auto!important;
+  }
+}
