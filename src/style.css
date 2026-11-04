@@ -1084,3 +1084,73 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
     font-size:16px!important;
   }
 }
+
+/* ABSOLUTE FINAL: repayment rows use the exact transaction content edges on desktop and mobile */
+.transaction-list{
+  --tx-pad-x:28px;
+}
+.transaction-list .transaction-main,
+.transaction-list .transaction-main.repayment-ledger-row{
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:17px var(--tx-pad-x)!important;
+  border-left:0!important;
+  border-right:0!important;
+  border-bottom:1px solid #292929!important;
+  border-radius:0!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+}
+/* Give repayment the missing top rule without changing its content inset. */
+.transaction-list .transaction-main.repayment-ledger-row{
+  border-top:1px solid #292929!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  column-gap:16px!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span{
+  grid-column:1!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  justify-self:stretch!important;
+  text-align:left!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>strong{
+  grid-column:2!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  justify-self:end!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span>b,
+.transaction-list .transaction-main.repayment-ledger-row>span>small{
+  margin-left:0!important;
+  padding-left:0!important;
+  text-align:left!important;
+}
+@media(max-width:600px){
+  .transaction-list{--tx-pad-x:22px}
+  .transaction-list .transaction-main,
+  .transaction-list .transaction-main.repayment-ledger-row{
+    padding:17px var(--tx-pad-x)!important;
+    width:100%!important;
+    max-width:100%!important;
+  }
+  .transaction-list .transaction-main.repayment-ledger-row{
+    grid-template-columns:minmax(0,1fr) auto!important;
+    column-gap:10px!important;
+  }
+  .transaction-list .transaction-main.repayment-ledger-row>strong{
+    max-width:none!important;
+    margin:0!important;
+    justify-self:end!important;
+  }
+}
