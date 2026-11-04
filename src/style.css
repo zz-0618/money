@@ -499,5 +499,98 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
   }
 }
 
-/* Advance payment / reimbursement */
-.advance-box{margin:12px 0;padding:16px;border:1px solid #303030;border-radius:14px;background:#0b0b0b}.advance-box label{display:block;color:#aaa;font-size:13px;margin:9px 0}.advance-box .advance-toggle{display:flex;align-items:center;gap:9px;color:#fff;font-size:14px;font-weight:700}.advance-box .advance-toggle input{width:18px!important;height:18px!important;margin:0!important;accent-color:#fff}.advance-inline{display:inline-block;margin-left:8px;color:#a9b8ff;font-size:12px;font-style:normal;font-weight:600}
+/* FINAL: account detail hero logo is identical and stable on desktop/mobile */
+.account-hero{
+  overflow:hidden!important;
+}
+.account-hero .account-hero-main{
+  display:flex!important;
+  align-items:center!important;
+  gap:18px!important;
+  min-width:0!important;
+}
+.account-hero .account-hero-main>.account-logo-frame{
+  position:relative!important;
+  flex:0 0 auto!important;
+  box-sizing:border-box!important;
+  width:60px!important;
+  height:60px!important;
+  min-width:60px!important;
+  max-width:60px!important;
+  min-height:60px!important;
+  max-height:60px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:12px!important;
+  background:transparent!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.account-hero .account-hero-main>.account-logo-frame>.account-logo{
+  position:static!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:60px!important;
+  height:60px!important;
+  min-width:60px!important;
+  max-width:60px!important;
+  min-height:60px!important;
+  max-height:60px!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:none!important;
+  border-radius:12px!important;
+}
+.account-hero .account-hero-main>.account-logo-frame.credit-card-logo-frame{
+  width:60px!important;
+  height:85px!important;
+  min-width:60px!important;
+  max-width:60px!important;
+  min-height:85px!important;
+  max-height:85px!important;
+  border-radius:10px!important;
+  background:#151515!important;
+}
+.account-hero .account-hero-main>.account-logo-frame.credit-card-logo-frame>.account-logo{
+  width:60px!important;
+  height:85px!important;
+  min-width:60px!important;
+  max-width:60px!important;
+  min-height:85px!important;
+  max-height:85px!important;
+  object-fit:contain!important;
+  border-radius:10px!important;
+}
+.account-hero .account-hero-main>div{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+}
+@media(max-width:800px){
+  .account-hero .account-hero-main{
+    gap:14px!important;
+  }
+  .account-hero .account-hero-main>.account-logo-frame,
+  .account-hero .account-hero-main>.account-logo-frame>.account-logo{
+    width:52px!important;
+    height:52px!important;
+    min-width:52px!important;
+    max-width:52px!important;
+    min-height:52px!important;
+    max-height:52px!important;
+  }
+  .account-hero .account-hero-main>.account-logo-frame.credit-card-logo-frame,
+  .account-hero .account-hero-main>.account-logo-frame.credit-card-logo-frame>.account-logo{
+    width:48px!important;
+    height:68px!important;
+    min-width:48px!important;
+    max-width:48px!important;
+    min-height:68px!important;
+    max-height:68px!important;
+  }
+}
