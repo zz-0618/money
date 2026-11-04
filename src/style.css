@@ -498,3 +498,6 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
     max-height:57px!important;
   }
 }
+
+/* Advance payment / reimbursement */
+.advance-box{margin:12px 0;padding:16px;border:1px solid #303030;border-radius:14px;background:#0b0b0b}.advance-box label{display:block;color:#aaa;font-size:13px;margin:9px 0}.advance-box .advance-toggle{display:flex;align-items:center;gap:9px;color:#fff;font-size:14px;font-weight:700}.advance-box .advance-toggle input{width:18px!important;height:18px!important;margin:0!important;accent-color:#fff}.advance-inline{display:inline-block;margin-left:8px;color:#a9b8ff;font-size:12px;font-style:normal;font-weight:600}
