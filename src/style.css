@@ -861,3 +861,9 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
     max-width:112px!important;
   }
 }
+
+/* Fee display: included in primary default-currency amount */
+.fee-inline,.account-fee-inline{color:#ff6b6b!important;font-size:12px!important;font-style:normal!important;font-weight:700!important}.account-fee-inline{display:block!important;margin-top:4px!important;text-align:right!important}
+
+/* Transaction fee is always account-currency and included in the primary base-currency total */
+.fee-inline,.account-fee-inline{color:#ff6b6b!important;font-size:12px!important;font-style:normal!important;font-weight:700!important}.account-fee-inline{display:block!important;margin-top:4px!important;text-align:right!important}
