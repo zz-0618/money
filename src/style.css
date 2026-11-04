@@ -1237,3 +1237,8 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
     gap:10px!important;
   }
 }
+
+/* Account detail fee hint should use regular text weight */
+.panel .account-tx-title-line>.fee-inline{
+  font-weight:400!important;
+}
