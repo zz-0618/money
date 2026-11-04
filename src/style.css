@@ -870,3 +870,99 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Account detail fee badge matches ledger detail: inline after transaction title */
 .account-tx-title-line{display:flex!important;align-items:baseline!important;gap:8px!important;min-width:0!important}.account-tx-title-line>b{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#fff!important}.account-tx-title-line>.fee-inline{flex:0 0 auto!important;margin-left:0!important;color:#ff6b6b!important;font-size:12px!important;font-weight:700!important;white-space:nowrap!important}.account-tx-row>span>small{display:block!important;margin-top:5px!important;color:#8f8f8f!important}
+
+/* FINAL transaction-row parity: aligned account text, regular weight, consistent separators */
+.account-list + *{} /* keep selector block anchored at end of stylesheet */
+.account-tx-row,
+.repayment-row,
+.transaction-main.repayment-ledger-row{
+  box-sizing:border-box!important;
+}
+/* Account detail: every clickable transaction/repayment gets the same row geometry and separator. */
+.panel .account-tx-row{
+  width:100%!important;
+  min-height:72px!important;
+  margin:0!important;
+  padding:16px 16px!important;
+  border:0!important;
+  border-bottom:1px solid #292929!important;
+  border-radius:0!important;
+  background:transparent!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  text-align:left!important;
+}
+.panel .account-tx-row:first-of-type{
+  border-top:1px solid #292929!important;
+}
+.panel .account-tx-row>span:first-child{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  text-align:left!important;
+}
+.panel .account-tx-title-line{
+  width:100%!important;
+  display:flex!important;
+  align-items:baseline!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  text-align:left!important;
+}
+.panel .account-tx-title-line>b,
+.panel .account-tx-row>span:first-child>b,
+.panel .repayment-row>span:first-child,
+.panel .repayment-row>span:first-child>b{
+  margin:0!important;
+  padding:0!important;
+  color:#fff!important;
+  font-size:inherit!important;
+  font-weight:400!important;
+  line-height:1.4!important;
+  text-align:left!important;
+}
+.panel .account-tx-row>span:first-child>small,
+.panel .repayment-row>span:first-child>small{
+  display:block!important;
+  width:auto!important;
+  margin:5px 0 0!important;
+  padding:0!important;
+  color:#8f8f8f!important;
+  font-size:inherit!important;
+  font-weight:400!important;
+  line-height:1.35!important;
+  text-align:left!important;
+  align-self:flex-start!important;
+}
+.panel .account-tx-row>b{
+  margin:0 0 0 auto!important;
+  font-weight:700!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+/* Ledger repayment uses the same top/bottom separator rhythm as ordinary transaction rows. */
+.transaction-list .transaction-main.repayment-ledger-row{
+  min-height:72px!important;
+  margin:0!important;
+  padding:16px 22px!important;
+  border:0!important;
+  border-top:1px solid #292929!important;
+  border-bottom:1px solid #292929!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span>b{
+  font-weight:400!important;
+}
+.transaction-list .transaction-main.repayment-ledger-row>span>small{
+  margin-top:5px!important;
+  font-weight:400!important;
+}
+@media(max-width:600px){
+  .panel .account-tx-row{padding:14px 10px!important;gap:10px!important}
+  .transaction-list .transaction-main.repayment-ledger-row{padding:14px 12px!important}
+}
