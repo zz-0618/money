@@ -867,3 +867,6 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Transaction fee is always account-currency and included in the primary base-currency total */
 .fee-inline,.account-fee-inline{color:#ff6b6b!important;font-size:12px!important;font-style:normal!important;font-weight:700!important}.account-fee-inline{display:block!important;margin-top:4px!important;text-align:right!important}
+
+/* Account detail fee badge matches ledger detail: inline after transaction title */
+.account-tx-title-line{display:flex!important;align-items:baseline!important;gap:8px!important;min-width:0!important}.account-tx-title-line>b{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#fff!important}.account-tx-title-line>.fee-inline{flex:0 0 auto!important;margin-left:0!important;color:#ff6b6b!important;font-size:12px!important;font-weight:700!important;white-space:nowrap!important}.account-tx-row>span>small{display:block!important;margin-top:5px!important;color:#8f8f8f!important}
