@@ -5,6 +5,7 @@
     "dexie":"^4.0.10",
     "dexie-react-hooks":"^1.1.7",
     "lucide-react":"^0.468.0",
+    "opencc-js": "1.4.2",
     "react":"^19.0.0",
     "react-dom":"^19.0.0",
     "xlsx":"^0.18.5"
