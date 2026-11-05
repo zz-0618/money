@@ -1,122 +1,37 @@
 import {FormEvent,useEffect,useMemo,useState} from 'react'
 import {ArrowLeft,Folder,FolderPlus,Link as LinkIcon,ListOrdered,Pencil,Plus,Search,Trash2,X,GripVertical} from 'lucide-react'
-import OpenCC from 'opencc-js'
 import {supabase} from './supabase'
-import './collections.css'
 
 type FolderRow={id:string;name:string;sort_order:number;parent_id?:string|null}
 type Article={id:string;folder_id?:string|null;platform:string;url:string;title?:string|null;body?:string|null;image_url?:string|null;image_urls?:string[]|null;created_at:string}
-
 const platforms:any={facebook:['FB','#1877f2'],instagram:['IG','#e1306c'],threads:['THREADS','#777'],xiaohongshu:['小紅書','#ff2942'],douyin:['抖音','#25f4ee'],other:['連結','#888']}
-const toTraditional=OpenCC.Converter({from:'cn',to:'tw'})
-const normalizeSearch=(value:string)=>toTraditional(String(value||'')).normalize('NFKC').toLocaleLowerCase('zh-TW').replace(/\s+/g,' ').trim()
-
-function platformOf(url:string){
- const u=url.toLowerCase()
- if(u.includes('facebook.com')||u.includes('fb.com'))return'facebook'
- if(u.includes('instagram.com'))return'instagram'
- if(u.includes('threads.net')||u.includes('threads.com'))return'threads'
- if(u.includes('xiaohongshu.com')||u.includes('xhslink.com'))return'xiaohongshu'
- if(u.includes('douyin.com'))return'douyin'
- return'other'
-}
-
+const zhSearchMap:Record<string,string>={臺':'台','萬':'万','與':'与','專':'专','業':'业','東':'东','兩':'两','嚴':'严','個':'个','為':'为','麗':'丽','舉':'举','麼':'么','義':'义','烏':'乌','樂':'乐','習':'习','鄉':'乡','書':'书','買':'买','亂':'乱','爭':'争','於':'于','虧':'亏','雲':'云','亞':'亚','產':'产','親':'亲','僅':'仅','從':'从','們':'们','價':'价','眾':'众','優':'优','會':'会','傳':'传','傷':'伤','體':'体','餘':'余','兒':'儿','黨':'党','蘭':'兰','關':'关','興':'兴','養':'养','獸':'兽','內':'内','寫':'写','軍':'军','農':'农','沖':'冲','決':'决','況':'况','凍':'冻','淨':'净','涼':'凉','減':'减','幾':'几','鳳':'凤','憑':'凭','凱':'凯','擊':'击','劃':'划','劉':'刘','則':'则','創':'创','刪':'删','別':'别','劇':'剧','勸':'劝','辦':'办','務':'务','動':'动','勵':'励','勞':'劳','勢':'势','區':'区','醫':'医','華':'华','協':'协','單':'单','賣':'卖','衛':'卫','廳':'厅','歷':'历','厲':'厉','壓':'压','厭':'厌','廣':'广','廠':'厂','開':'开','異':'异','棄':'弃','張':'张','彎':'弯','強':'强','彈':'弹','彙':'汇','後':'后','徑':'径','徵':'征','恆':'恒','惡':'恶','惱':'恼','愛':'爱','慘':'惨','慣':'惯','慶':'庆','憂':'忧','懷':'怀','態':'态','總':'总','戀':'恋','戰':'战','戲':'戏','戶':'户','損':'损','換':'换','據':'据','擇':'择','擋':'挡','擔':'担','擬':'拟','攏':'拢','攔':'拦','攝':'摄','攜':'携','擺':'摆','搖':'摇','敗':'败','敘':'叙','敵':'敌','數':'数','鬥':'斗','斷':'断','無':'无','舊':'旧','時':'时','暈':'晕','暫':'暂','術':'术','機':'机','殺':'杀','雜':'杂','權':'权','條':'条','來':'来','極':'极','構':'构','槍':'枪','櫃':'柜','標':'标','棧':'栈','棟':'栋','樹':'树','樣':'样','橋':'桥','檔':'档','檢':'检','樓':'楼','歡':'欢','歲':'岁','歸':'归','殘':'残','氣':'气','漢':'汉','湯':'汤','溝':'沟','滅':'灭','滬':'沪','滯':'滞','濟':'济','濤':'涛','濫':'滥','濱':'滨','灘':'滩','灣':'湾','燈':'灯','靈':'灵','災':'灾','爐':'炉','點':'点','煉':'炼','煙':'烟','煩':'烦','燒':'烧','熱':'热','爺':'爷','牆':'墙','牽':'牵','獨':'独','獲':'获','獻':'献','環':'环','現':'现','畢':'毕','畫':'画','當':'当','疊':'叠','瘋':'疯','發':'发','監':'监','盤':'盘','盜':'盗','盡':'尽','礎':'础','禮':'礼','禍':'祸','禦':'御','種':'种','積':'积','稱':'称','穩':'稳','穀':'谷','窩':'窝','競':'竞','筆':'笔','築':'筑','範':'范','籃':'篮','籌':'筹','籤':'签','糧':'粮','糾':'纠','紀':'纪','約':'约','紅':'红','紋':'纹','納':'纳','紐':'纽','線':'线','練':'练','組':'组','細':'细','織':'织','終':'终','經':'经','綁':'绑','結':'结','絕':'绝','統':'统','絡':'络','給':'给','綠':'绿','綜':'综','綱':'纲','網':'网','維':'维','繳':'缴','羅':'罗','罰':'罚','罷':'罢','翹':'翘','聖':'圣','聞':'闻','聯':'联','聰':'聪','聲':'声','職':'职','聽':'听','肅':'肃','脅':'胁','脈':'脉','腎':'肾','腦':'脑','腳':'脚','脫':'脱','臉':'脸','臘':'腊','膚':'肤','膠':'胶','膽':'胆','臟':'脏','艦':'舰','艙':'舱','藝':'艺','節':'节','莊':'庄','葉':'叶','著':'着','蘿':'萝','處':'处','虛':'虚','蟲':'虫','蝦':'虾','蟻':'蚁','蠅':'蝇','蠟':'蜡','蠶':'蚕','補':'补','裝':'装','複':'复','襯':'衬','襲':'袭','見':'见','觀':'观','規':'规','覺':'觉','覽':'览','覓':'觅','視':'视','訓':'训','訊':'讯','記':'记','講':'讲','許':'许','論':'论','設':'设','訪':'访','證':'证','評':'评','識':'识','訴':'诉','詞':'词','該':'该','詳':'详','語':'语','誤':'误','說':'说','請':'请','諸':'诸','讀':'读','課':'课','誰':'谁','調':'调','談':'谈','謝':'谢','譯':'译','議':'议','讓':'让','豔':'艳','貝':'贝','負':'负','財':'财','貢':'贡','貧':'贫','貨':'货','販':'贩','貪':'贪','責':'责','貴':'贵','貸':'贷','費':'费','貼':'贴','貿':'贸','賀':'贺','賊':'贼','賓':'宾','賜':'赐','賞':'赏','賠':'赔','賢':'贤','賦':'赋','質':'质','賬':'账','購':'购','贈':'赠','贊':'赞','趕':'赶','趙':'赵','跡':'迹','踐':'践','車':'车','軌':'轨','軟':'软','轉':'转','輪':'轮','輯':'辑','輸':'输','轄':'辖','辭':'辞','邊':'边','遼':'辽','達':'达','遷':'迁','過':'过','運':'运','還':'还','這':'这','進':'进','遠':'远','違':'违','連':'连','遲':'迟','適':'适','選':'选','遺':'遗','郵':'邮','鄰':'邻','醜':'丑','釋':'释','裡':'里','鑑':'鉴','針':'针','釘':'钉','鈔':'钞','鈣':'钙','鈴':'铃','鉛':'铅','銀':'银','銅':'铜','銷':'销','鋒':'锋','鋼':'钢','錄':'录','錢':'钱','錦':'锦','鍋':'锅','鍵':'键','鎖':'锁','鐘':'钟','鐵':'铁','鑰':'钥','長':'长','門':'门','閃':'闪','閉':'闭','問':'问','閒':'闲','間':'间','閣':'阁','隊':'队','陽':'阳','陰':'阴','陣':'阵','階':'阶','際':'际','陸':'陆','險':'险','隨':'随','隱':'隐','隻':'只','難':'难','雞':'鸡','離':'离','電':'电','霧':'雾','靜':'静','頁':'页','頂':'顶','頃':'顷','項':'项','順':'顺','須':'须','頓':'顿','領':'领','頭':'头','頻':'频','題':'题','顏':'颜','額':'额','風':'风','飛':'飞','飯':'饭','飲':'饮','飽':'饱','餓':'饿','館':'馆','馬':'马','馳':'驰','駕':'驾','驗':'验','騎':'骑','騙':'骗','魚':'鱼','魯':'鲁','鮮':'鲜','鳥':'鸟','鴨':'鸭','鵝':'鹅','麥':'麦','黃':'黄','齊':'齐','齒':'齿','龍':'龙','龜':'龟','遊':'游'}
+const normalizeSearch=(value:string)=>Array.from(String(value||'').normalize('NFKC').toLocaleLowerCase('zh-TW')).map(ch=>zhSearchMap[ch]||ch).join('').replace(/\s+/g,' ').trim()
+function platformOf(url:string){const u=url.toLowerCase();if(u.includes('facebook.com')||u.includes('fb.com'))return'facebook';if(u.includes('instagram.com'))return'instagram';if(u.includes('threads.net')||u.includes('threads.com'))return'threads';if(u.includes('xiaohongshu.com')||u.includes('xhslink.com'))return'xiaohongshu';if(u.includes('douyin.com'))return'douyin';return'other'}
 export default function CollectionsPage({user,done}:any){
  const[folders,setFolders]=useState<FolderRow[]>([]),[articles,setArticles]=useState<Article[]>([]),[currentFolder,setCurrentFolder]=useState<string|null>(null),[query,setQuery]=useState(''),[editing,setEditing]=useState<Article|null|undefined>(),[folderEditor,setFolderEditor]=useState<{row?:FolderRow|null;parentId?:string|null}|undefined>(),[sorting,setSorting]=useState(false),[dragging,setDragging]=useState('')
-
- async function load(){
-  const[f,a]=await Promise.all([
-   supabase.from('article_folders').select('*').order('sort_order'),
-   supabase.from('saved_articles').select('*').order('created_at',{ascending:false})
-  ])
-  if(f.error)return done(f.error.message,false)
-  if(a.error)return done(a.error.message,false)
-  setFolders(f.data||[]);setArticles(a.data||[])
- }
- useEffect(()=>{void load()},[])
-
- const active=folders.find(x=>x.id===currentFolder)||null
- const parent=active?.parent_id?folders.find(x=>x.id===active.parent_id)||null:null
+ async function load(){const[f,a]=await Promise.all([supabase.from('article_folders').select('*').order('sort_order'),supabase.from('saved_articles').select('*').order('created_at',{ascending:false})]);if(f.error)return done(f.error.message,false);if(a.error)return done(a.error.message,false);setFolders(f.data||[]);setArticles(a.data||[])}
+ useEffect(()=>{load()},[])
+ const active=folders.find(x=>x.id===currentFolder)||null,parent=active?.parent_id?folders.find(x=>x.id===active.parent_id)||null:null
  const levelFolders=folders.filter(x=>(x.parent_id||null)===(currentFolder||null)).sort((a,b)=>a.sort_order-b.sort_order)
  const rootFolders=folders.filter(x=>!x.parent_id).sort((a,b)=>a.sort_order-b.sort_order)
-
- // 遞迴取得所有後代資料夾。未來即使增加第三層、第四層也會正確計數。
- function descendantFolderIds(folderId:string){
-  const result=new Set<string>()
-  const queue=[folderId]
-  while(queue.length){
-   const parentId=queue.shift()!
-   folders.filter(x=>x.parent_id===parentId).forEach(child=>{
-    if(!result.has(child.id)){result.add(child.id);queue.push(child.id)}
-   })
-  }
-  return result
- }
- function folderStats(folderId:string){
-  const descendants=descendantFolderIds(folderId)
-  const ids=new Set([folderId,...descendants])
-  return{
-   childFolderCount:descendants.size,
-   articleCount:articles.filter(x=>!!x.folder_id&&ids.has(x.folder_id)).length
-  }
- }
-
- const activeScopeIds=useMemo(()=>{
-  if(!currentFolder)return null
-  return new Set([currentFolder,...descendantFolderIds(currentFolder)])
- },[currentFolder,folders])
+ const childIds=active&&!active.parent_id?new Set(folders.filter(x=>x.parent_id===active.id).map(x=>x.id)):new Set<string>()
  const normalizedQuery=useMemo(()=>normalizeSearch(query),[query])
- const shown=useMemo(()=>articles.filter(article=>{
-  const inScope=!activeScopeIds||!!article.folder_id&&activeScopeIds.has(article.folder_id)
-  if(!inScope)return false
-  if(!normalizedQuery)return true
-  const searchable=normalizeSearch(`${article.title||''} ${article.body||''} ${article.url}`)
-  return searchable.includes(normalizedQuery)
- }),[articles,activeScopeIds,normalizedQuery])
-
- async function saveFolder(name:string,id?:string,parentId?:string|null){const{error}=await supabase.rpc('save_article_folder',{p_id:id||null,p_name:name,p_parent_id:parentId||null});if(error)return done(error.message,false);setFolderEditor(undefined);done('資料夾已儲存');void load()}
- async function deleteFolder(x:FolderRow){if(!confirm(`確定刪除「${x.name}」？下層資料夾與文章會移到未分類。`))return;const{error}=await supabase.rpc('delete_article_folder',{p_id:x.id});if(error)return done(error.message,false);setCurrentFolder(x.parent_id||null);done('資料夾已刪除');void load()}
- async function deleteArticle(x:Article){if(!confirm('確定刪除這篇收藏？'))return;const{error}=await supabase.rpc('delete_saved_article',{p_id:x.id});if(error)return done(error.message,false);done('收藏已刪除');void load()}
- async function dropFolder(target:string){if(!dragging||dragging===target)return;const list=[...levelFolders],from=list.findIndex(x=>x.id===dragging),to=list.findIndex(x=>x.id===target);if(from<0||to<0)return;list.splice(to,0,list.splice(from,1)[0]);setDragging('');const{error}=await supabase.rpc('reorder_article_folders',{p_parent_id:currentFolder,p_ids:list.map(x=>x.id)});if(error)return done(error.message,false);setSorting(false);done('資料夾順序已更新');void load()}
+ const shown=useMemo(()=>articles.filter(x=>{const scope=!currentFolder?true:active&&!active.parent_id?(x.folder_id===active.id||childIds.has(x.folder_id||'')):x.folder_id===currentFolder;return scope&&(!normalizedQuery||normalizeSearch(`${x.title||''} ${x.body||''} ${x.url}`).includes(normalizedQuery))}),[articles,currentFolder,normalizedQuery,folders])
+ async function saveFolder(name:string,id?:string,parentId?:string|null){const{error}=await supabase.rpc('save_article_folder',{p_id:id||null,p_name:name,p_parent_id:parentId||null});if(error)return done(error.message,false);setFolderEditor(undefined);done('資料夾已儲存');load()}
+ async function deleteFolder(x:FolderRow){if(!confirm(`確定刪除「${x.name}」？下層資料夾與文章會移到未分類。`))return;const{error}=await supabase.rpc('delete_article_folder',{p_id:x.id});if(error)return done(error.message,false);setCurrentFolder(x.parent_id||null);done('資料夾已刪除');load()}
+ async function deleteArticle(x:Article){if(!confirm('確定刪除這篇收藏？'))return;const{error}=await supabase.rpc('delete_saved_article',{p_id:x.id});if(error)return done(error.message,false);done('收藏已刪除');load()}
+ async function dropFolder(target:string){if(!dragging||dragging===target)return;const list=[...levelFolders],from=list.findIndex(x=>x.id===dragging),to=list.findIndex(x=>x.id===target);if(from<0||to<0)return;list.splice(to,0,list.splice(from,1)[0]);setDragging('');const{error}=await supabase.rpc('reorder_article_folders',{p_parent_id:currentFolder,p_ids:list.map(x=>x.id)});if(error)return done(error.message,false);setSorting(false);done('資料夾順序已更新');load()}
  const folderOptions=folders.map(f=>({id:f.id,label:f.parent_id?`${folders.find(p=>p.id===f.parent_id)?.name||''} / ${f.name}`:f.name}))
- const displayedFolders=!active?rootFolders:levelFolders
-
- return <>
-  <div className="collections-head">
-   <div className="collections-search"><Search size={18}/><input aria-label="搜尋收藏" placeholder="搜尋收藏" value={query} onChange={e=>setQuery(e.target.value)}/></div>
-   {active&&<button className="iconbtn" title="新增子資料夾" onClick={()=>setFolderEditor({row:null,parentId:active.id})}><FolderPlus/></button>}
-   <button className="iconbtn" title="排序資料夾" onClick={()=>setSorting(true)}><ListOrdered/></button>
-   {!active&&<button className="iconbtn" title="新增母資料夾" onClick={()=>setFolderEditor({row:null,parentId:null})}><FolderPlus/></button>}
-  </div>
-
-  <div className="collection-breadcrumb">
-   {active&&<button className="collection-back-icon" title={parent?`返回 ${parent.name}`:'返回全部收藏'} aria-label={parent?`返回 ${parent.name}`:'返回全部收藏'} onClick={()=>setCurrentFolder(active.parent_id||null)}><ArrowLeft size={19}/></button>}
-   <div><h2>{active?.name||'全部收藏'}</h2><small>{active?(active.parent_id?'子資料夾':'母資料夾'):'所有收藏文章與母資料夾'}</small></div>
-   {active&&<div className="collection-current-actions"><button className="collection-round-action" title="編輯資料夾" onClick={()=>setFolderEditor({row:active,parentId:active.parent_id||null})}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除資料夾" onClick={()=>deleteFolder(active)}><Trash2/></button></div>}
-  </div>
-
-  <div className="collection-folders">
-   {displayedFolders.map(folder=>{const stats=folderStats(folder.id);return <button className="collection-folder-card" onClick={()=>setCurrentFolder(folder.id)} key={folder.id}>
-    <span className="collection-folder-icon"><Folder/></span>
-    <span className="collection-folder-copy"><strong>{folder.name}</strong><small>{stats.childFolderCount} 個子資料夾・{stats.articleCount} 篇文章</small></span>
-   </button>})}
-  </div>
-
-  <section className="collection-grid">{shown.map(x=>{const[label,color]=platforms[x.platform]||platforms.other;return <article className="saved-article" key={x.id}>{x.image_url?<img src={x.image_url} alt=""/>:<div className="saved-article-placeholder"><LinkIcon/></div>}<div className="saved-article-copy"><div className="article-platform" style={{color}}>{label}</div><h2>{x.title||'未取得文章標題'}</h2>{x.body?<p>{x.body}</p>:<p className="empty-body">文章內文空白</p>}<div className="saved-article-actions"><a href={x.url} target="_blank" rel="noreferrer">開啟原文</a><button className="collection-round-action" title="編輯收藏" onClick={()=>setEditing(x)}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除收藏" onClick={()=>deleteArticle(x)}><Trash2/></button></div></div></article>})}</section>
-  {!shown.length&&<section className="panel empty">目前沒有符合條件的收藏文章</section>}
-  <button className="floating-add" title="新增收藏" aria-label="新增收藏" onClick={()=>setEditing(null)}><Plus/></button>
-
-  {editing!==undefined&&<ArticleEditor row={editing} folders={folderOptions} defaultFolder={currentFolder} done={done} close={()=>setEditing(undefined)} reload={load}/ >}
-  {folderEditor!==undefined&&<FolderEditor row={folderEditor.row} parentId={folderEditor.parentId} close={()=>setFolderEditor(undefined)} save={saveFolder}/ >}
-  {sorting&&<SortFolders title={active?'子資料夾排序':'母資料夾排序'} rows={levelFolders} dragging={dragging} setDragging={setDragging} drop={dropFolder} close={()=>setSorting(false)}/ >}
- </>
+ return <><div className="collections-head"><div className="collections-search"><Search size={18}/><input placeholder="搜尋收藏" value={query} onChange={e=>setQuery(e.target.value)}/></div>{active&&<button className="iconbtn" title="新增子資料夾" onClick={()=>setFolderEditor({row:null,parentId:active.parent_id?active.parent_id:active.id})}><FolderPlus/></button>}<button className="iconbtn" title="排序資料夾" onClick={()=>setSorting(true)}><ListOrdered/></button>{!active&&<button className="iconbtn" title="新增母資料夾" onClick={()=>setFolderEditor({row:null,parentId:null})}><FolderPlus/></button>}</div>
+ <div className="collection-breadcrumb">{active&&<button className="collection-back-icon" title={parent?`返回 ${parent.name}`:'返回全部收藏'} aria-label={parent?`返回 ${parent.name}`:'返回全部收藏'} onClick={()=>setCurrentFolder(active.parent_id||null)}><ArrowLeft size={19}/></button>}<div><h2>{active?.name||'全部收藏'}</h2><small>{active?(active.parent_id?'子資料夾':'母資料夾'):'所有收藏文章與母資料夾'}</small></div>{active&&<div className="collection-current-actions"><button className="collection-round-action" title="編輯資料夾" onClick={()=>setFolderEditor({row:active,parentId:active.parent_id||null})}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除資料夾" onClick={()=>deleteFolder(active)}><Trash2/></button></div>}</div>
+ <div className="collection-folders">{!active&&rootFolders.map(f=><button className="collection-folder-card" onClick={()=>setCurrentFolder(f.id)} key={f.id}><Folder/><span>{f.name}</span><small>{folders.filter(x=>x.parent_id===f.id).length} 子資料夾・{articles.filter(x=>x.folder_id===f.id||childIds.has(x.folder_id||'')).length} 文章</small></button>)}{active&&!active.parent_id&&levelFolders.map(f=><button className="collection-folder-card" onClick={()=>setCurrentFolder(f.id)} key={f.id}><Folder/><span>{f.name}</span><small>{articles.filter(x=>x.folder_id===f.id).length} 文章</small></button>)}</div>
+ <section className="collection-grid">{shown.map(x=>{const[label,color]=platforms[x.platform]||platforms.other;return <article className="saved-article" key={x.id}>{x.image_url?<img src={x.image_url} alt=""/>:<div className="saved-article-placeholder"><LinkIcon/></div>}<div className="saved-article-copy"><div className="article-platform" style={{color}}>{label}</div><h2>{x.title||'未取得文章標題'}</h2>{x.body?<p>{x.body}</p>:<p className="empty-body">文章內文空白</p>}<div className="saved-article-actions"><a href={x.url} target="_blank" rel="noreferrer">開啟原文</a><button className="collection-round-action" title="編輯收藏" onClick={()=>setEditing(x)}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除收藏" onClick={()=>deleteArticle(x)}><Trash2/></button></div></div></article>})}</section>{!shown.length&&<section className="panel empty">目前沒有收藏文章</section>}<button className="floating-add" onClick={()=>setEditing(null)}><Plus/></button>
+ {editing!==undefined&&<ArticleEditor row={editing} folders={folderOptions} defaultFolder={currentFolder} done={done} close={()=>setEditing(undefined)} reload={load}/>} {folderEditor!==undefined&&<FolderEditor row={folderEditor.row} parentId={folderEditor.parentId} close={()=>setFolderEditor(undefined)} save={saveFolder}/>} {sorting&&<SortFolders title={active?'子資料夾排序':'母資料夾排序'} rows={levelFolders} dragging={dragging} setDragging={setDragging} drop={dropFolder} close={()=>setSorting(false)}/>}</>
 }
-
 function SortFolders({title,rows,dragging,setDragging,drop,close}:any){return <div className="modal"><div className="panel collection-modal collection-sort-modal"><button className="modal-close" onClick={close}><X/></button><h2>{title}</h2>{rows.length?<div className="collection-sort-list">{rows.map((x:FolderRow)=><div draggable onDragStart={()=>setDragging(x.id)} onDragOver={(e:any)=>e.preventDefault()} onDrop={()=>drop(x.id)} className={dragging===x.id?'dragging':''} key={x.id}><GripVertical/><span>{x.name}</span></div>)}</div>:<p className="empty">目前沒有可排序的資料夾</p>}</div></div>}
 function FolderEditor({row,parentId,close,save}:any){const[name,setName]=useState(row?.name||'');return <div className="modal"><form className="panel collection-modal" onSubmit={e=>{e.preventDefault();if(name.trim())save(name.trim(),row?.id,parentId)}}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯資料夾':parentId?'新增子資料夾':'新增母資料夾'}</h2><label>資料夾名稱<input value={name} onChange={e=>setName(e.target.value)} required autoFocus/></label><button>儲存</button></form></div>}
-function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){
- const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false)
+function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false)
  async function fetchMeta(){if(!url.trim())return;setFetching(true);try{const detected=platformOf(url);setPlatform(detected);const{data,error}=await supabase.functions.invoke('article-link-preview',{body:{url:url.trim()}});if(error)throw error;if(data?.title)setTitle(data.title);if(data?.body)setBody(data.body);if(data?.image_url)setImage(data.image_url);if(Array.isArray(data?.image_urls)){setImages(data.image_urls);if(data.image_urls[0])setImage(data.image_urls[0])}if(data?.url)setUrl(data.url);if(data?.platform)setPlatform(data.platform)}catch{done('連結已保留，但來源網站未提供可讀取資料；可手動填寫。',false)}finally{setFetching(false)}}
  async function save(e:FormEvent){e.preventDefault();const{error}=await supabase.rpc('save_saved_article',{p_id:row?.id||null,p_folder_id:folder||null,p_platform:platformOf(url)||platform,p_url:url.trim(),p_title:title.trim()||null,p_body:body.trim()||null,p_image_url:image.trim()||null,p_image_urls:images.length?images:(image.trim()?[image.trim()]:[])});if(error)return done(error.message,false);close();done(row?'收藏已更新':'文章已收藏');reload()}
- return <div className="modal collection-editor-overlay"><form className="panel collection-modal collection-article-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯收藏':'收藏文章'}</h2><label>文章連結<div className="collection-url"><input type="url" value={url} onChange={e=>{setUrl(e.target.value);setPlatform(platformOf(e.target.value))}} required/><button type="button" disabled={fetching} onClick={fetchMeta}>{fetching?'讀取中':'讀取'}</button></div></label><label>資料夾<select value={folder} onChange={e=>setFolder(e.target.value)}><option value="">未分類</option>{folders.map((f:any)=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label><label>文章標題<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>文章圖片網址<input type="url" value={image} onChange={e=>setImage(e.target.value)}/></label><label>文章內文<textarea value={body} onChange={e=>setBody(e.target.value)}/></label>{(images.length||image)&&<div className="collection-image-gallery">{(images.length?images:[image]).map((src:string,i:number)=><img className="collection-image-preview" src={src} alt={`預覽 ${i+1}`} key={src+i}/>)}</div>}<button>儲存收藏</button></form></div>
-}
+ return <div className="modal collection-editor-overlay"><form className="panel collection-modal collection-article-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯收藏':'收藏文章'}</h2><label>文章連結<div className="collection-url"><input type="url" value={url} onChange={e=>{setUrl(e.target.value);setPlatform(platformOf(e.target.value))}} required/><button type="button" disabled={fetching} onClick={fetchMeta}>{fetching?'讀取中':'讀取'}</button></div></label><label>資料夾<select value={folder} onChange={e=>setFolder(e.target.value)}><option value="">未分類</option>{folders.map((f:any)=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label><label>文章標題<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>文章圖片網址<input type="url" value={image} onChange={e=>setImage(e.target.value)}/></label><label>文章內文<textarea value={body} onChange={e=>setBody(e.target.value)}/></label>{(images.length||image)&&<div className="collection-image-gallery">{(images.length?images:[image]).map((src:string,i:number)=><img className="collection-image-preview" src={src} alt={`預覽 ${i+1}`} key={src+i}/>)}</div>}<button>儲存收藏</button></form></div>}
