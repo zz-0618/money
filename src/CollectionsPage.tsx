@@ -24,9 +24,56 @@ export default function CollectionsPage({user,done}:any){
  const active=folders.find(x=>x.id===currentFolder)||null,parent=active?.parent_id?folders.find(x=>x.id===active.parent_id)||null:null
  const levelFolders=folders.filter(x=>(x.parent_id||null)===(currentFolder||null)).sort((a,b)=>a.sort_order-b.sort_order)
  const rootFolders=folders.filter(x=>!x.parent_id).sort((a,b)=>a.sort_order-b.sort_order)
- const childIds=active&&!active.parent_id?new Set(folders.filter(x=>x.parent_id===active.id).map(x=>x.id)):new Set<string>()
+ const folderTree=useMemo(()=>{
+  const childrenByParent=new Map<string,FolderRow[]>()
+  for(const folder of folders){
+   const parentKey=folder.parent_id||''
+   const children=childrenByParent.get(parentKey)||[]
+   children.push(folder)
+   childrenByParent.set(parentKey,children)
+  }
+  return childrenByParent
+ },[folders])
+
+ function getDescendantFolderIds(folderId:string){
+  const descendants=new Set<string>()
+  const queue=[folderId]
+  while(queue.length){
+   const parentId=queue.shift()!
+   for(const child of folderTree.get(parentId)||[]){
+    if(!descendants.has(child.id)){
+     descendants.add(child.id)
+     queue.push(child.id)
+    }
+   }
+  }
+  return descendants
+ }
+
+ function getFolderStats(folderId:string){
+  const includedFolderIds=getDescendantFolderIds(folderId)
+  includedFolderIds.add(folderId)
+  return{
+   childFolderCount:includedFolderIds.size-1,
+   articleCount:articles.reduce((total,article)=>
+    article.folder_id&&includedFolderIds.has(article.folder_id)?total+1:total,0)
+  }
+ }
+
+ const activeFolderIds=useMemo(()=>{
+  if(!currentFolder)return null
+  const ids=getDescendantFolderIds(currentFolder)
+  ids.add(currentFolder)
+  return ids
+ },[currentFolder,folderTree])
  const normalizedQuery=useMemo(()=>normalizeSearch(query),[query])
- const shown=useMemo(()=>articles.filter(x=>{const scope=!currentFolder?true:active&&!active.parent_id?(x.folder_id===active.id||childIds.has(x.folder_id||'')):x.folder_id===currentFolder;return scope&&(!normalizedQuery||normalizeSearch(`${x.title||''} ${x.body||''} ${x.url}`).includes(normalizedQuery))}),[articles,currentFolder,normalizedQuery,folders])
+ const shown=useMemo(()=>articles.filter(article=>{
+  const inCurrentFolder=!activeFolderIds||(article.folder_id&&activeFolderIds.has(article.folder_id))
+  if(!inCurrentFolder)return false
+  if(!normalizedQuery)return true
+  return normalizeSearch(`${article.title||''} ${article.body||''} ${article.url||''}`).includes(normalizedQuery)
+ }),[articles,activeFolderIds,normalizedQuery])
+ const displayedFolders=!active?rootFolders:levelFolders
  async function saveFolder(name:string,id?:string,parentId?:string|null){const{error}=await supabase.rpc('save_article_folder',{p_id:id||null,p_name:name,p_parent_id:parentId||null});if(error)return done(error.message,false);setFolderEditor(undefined);done('資料夾已儲存');load()}
  async function deleteFolder(x:FolderRow){if(!confirm(`確定刪除「${x.name}」？下層資料夾與文章會移到未分類。`))return;const{error}=await supabase.rpc('delete_article_folder',{p_id:x.id});if(error)return done(error.message,false);setCurrentFolder(x.parent_id||null);done('資料夾已刪除');load()}
  async function deleteArticle(x:Article){if(!confirm('確定刪除這篇收藏？'))return;const{error}=await supabase.rpc('delete_saved_article',{p_id:x.id});if(error)return done(error.message,false);done('收藏已刪除');load()}
@@ -34,7 +81,7 @@ export default function CollectionsPage({user,done}:any){
  const folderOptions=folders.map(f=>({id:f.id,label:f.parent_id?`${folders.find(p=>p.id===f.parent_id)?.name||''} / ${f.name}`:f.name}))
  return <><div className="collections-head"><div className="collections-search"><Search size={18}/><input placeholder="搜尋收藏" value={query} onChange={e=>setQuery(e.target.value)}/></div>{active&&<button className="iconbtn" title="新增子資料夾" onClick={()=>setFolderEditor({row:null,parentId:active.parent_id?active.parent_id:active.id})}><FolderPlus/></button>}<button className="iconbtn" title="排序資料夾" onClick={()=>setSorting(true)}><ListOrdered/></button>{!active&&<button className="iconbtn" title="新增母資料夾" onClick={()=>setFolderEditor({row:null,parentId:null})}><FolderPlus/></button>}</div>
  <div className="collection-breadcrumb">{active&&<button className="collection-back-icon" title={parent?`返回 ${parent.name}`:'返回全部收藏'} aria-label={parent?`返回 ${parent.name}`:'返回全部收藏'} onClick={()=>setCurrentFolder(active.parent_id||null)}><ArrowLeft size={19}/></button>}<div><h2>{active?.name||'全部收藏'}</h2><small>{active?(active.parent_id?'子資料夾':'母資料夾'):'所有收藏文章與母資料夾'}</small></div>{active&&<div className="collection-current-actions"><button className="collection-round-action" title="編輯資料夾" onClick={()=>setFolderEditor({row:active,parentId:active.parent_id||null})}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除資料夾" onClick={()=>deleteFolder(active)}><Trash2/></button></div>}</div>
- <div className="collection-folders">{!active&&rootFolders.map(f=><button className="collection-folder-card" onClick={()=>setCurrentFolder(f.id)} key={f.id}><Folder/><span>{f.name}</span><small>{folders.filter(x=>x.parent_id===f.id).length} 子資料夾・{articles.filter(x=>x.folder_id===f.id||childIds.has(x.folder_id||'')).length} 文章</small></button>)}{active&&!active.parent_id&&levelFolders.map(f=><button className="collection-folder-card" onClick={()=>setCurrentFolder(f.id)} key={f.id}><Folder/><span>{f.name}</span><small>{articles.filter(x=>x.folder_id===f.id).length} 文章</small></button>)}</div>
+ <div className="collection-folders">{displayedFolders.map(folder=>{const stats=getFolderStats(folder.id);return <button className="collection-folder-card" onClick={()=>setCurrentFolder(folder.id)} key={folder.id}><span className="collection-folder-icon"><Folder/></span><span className="collection-folder-copy"><strong>{folder.name}</strong><small>{stats.childFolderCount} 個子資料夾・{stats.articleCount} 篇文章</small></span></button>})}</div>
  <section className="collection-grid">{shown.map(x=>{const[label,color]=platforms[x.platform]||platforms.other;return <article className="saved-article" key={x.id}>{x.image_url?<img src={x.image_url} alt=""/>:<div className="saved-article-placeholder"><LinkIcon/></div>}<div className="saved-article-copy"><div className="article-platform" style={{color}}>{label}</div><h2>{x.title||'未取得文章標題'}</h2>{x.body?<p>{x.body}</p>:<p className="empty-body">文章內文空白</p>}<div className="saved-article-actions"><a href={x.url} target="_blank" rel="noreferrer">開啟原文</a><button className="collection-round-action" title="編輯收藏" onClick={()=>setEditing(x)}><Pencil/></button><button className="collection-round-action collection-delete-action" title="刪除收藏" onClick={()=>deleteArticle(x)}><Trash2/></button></div></div></article>})}</section>{!shown.length&&<section className="panel empty">目前沒有收藏文章</section>}<button className="floating-add" onClick={()=>setEditing(null)}><Plus/></button>
  {editing!==undefined&&<ArticleEditor row={editing} folders={folderOptions} defaultFolder={currentFolder} done={done} close={()=>setEditing(undefined)} reload={load}/>} {folderEditor!==undefined&&<FolderEditor row={folderEditor.row} parentId={folderEditor.parentId} close={()=>setFolderEditor(undefined)} save={saveFolder}/>} {sorting&&<SortFolders title={active?'子資料夾排序':'母資料夾排序'} rows={levelFolders} dragging={dragging} setDragging={setDragging} drop={dropFolder} close={()=>setSorting(false)}/>}</>
 }
