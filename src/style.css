@@ -1273,3 +1273,81 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 .account-detail-tools{gap:8px!important}.account-detail-tools>.privacy-toggle{margin-left:auto!important}.account-detail-tools>.privacy-toggle+.account-edit-button{margin-left:0!important}
 .transaction-list>.transaction-main.repayment-ledger-row{border-top:0!important;border-left:0!important;border-right:0!important;border-bottom:1px solid #292929!important;box-shadow:none!important}
 @media(max-width:800px){.dashboard-tools>.privacy-toggle,.page-tools .privacy-toggle,.account-detail-tools>.privacy-toggle{width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;min-height:40px!important;max-height:40px!important}}
+
+/* FINAL: fee and advance toggles share one row; both fields expand downward */
+.transaction-extra-buttons{
+  display:flex!important;
+  align-items:stretch!important;
+  gap:12px!important;
+  margin:12px 0 0!important;
+}
+.transaction-extra-buttons>.fee-toggle{
+  width:126px!important;
+  min-width:126px!important;
+  max-width:126px!important;
+  height:64px!important;
+  min-height:64px!important;
+  max-height:64px!important;
+  margin:0!important;
+  padding:0 16px!important;
+  border-radius:16px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+}
+.fee-expanded-fields,
+.transaction-extra-buttons+.advance-fields,
+.fee-expanded-fields+.advance-fields{
+  margin-top:10px!important;
+}
+.fee-expanded-fields{
+  padding:14px!important;
+  border:1px solid #303030!important;
+  border-radius:14px!important;
+  background:#0b0b0b!important;
+}
+.fee-expanded-fields label{
+  display:block!important;
+  margin:0!important;
+  color:#aaa!important;
+  font-size:13px!important;
+}
+.fee-expanded-fields .card-fee-input{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:58px!important;
+  min-height:58px!important;
+  margin:9px 0 0!important;
+  padding:0 18px!important;
+  border:1px solid #3a3a3a!important;
+  border-radius:14px!important;
+  background:#080808!important;
+  color:#fff!important;
+  font-size:24px!important;
+  font-weight:800!important;
+  line-height:58px!important;
+  text-align:left!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:600px){
+  .transaction-extra-buttons{gap:10px!important}
+  .transaction-extra-buttons>.fee-toggle{
+    width:112px!important;
+    min-width:112px!important;
+    max-width:112px!important;
+    height:58px!important;
+    min-height:58px!important;
+    max-height:58px!important;
+    padding:0 12px!important;
+  }
+  .fee-expanded-fields{padding:12px!important}
+  .fee-expanded-fields .card-fee-input{
+    height:54px!important;
+    min-height:54px!important;
+    font-size:22px!important;
+    line-height:54px!important;
+  }
+}
