@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, CheckCircle2, CircleDollarSign, GripVertical, Eye, EyeOff,
   LayoutDashboard, Landmark, LogOut, Menu, Pencil, Plus, Settings,
-  Trash2, WalletCards, X, ChevronDown, Check, Plane, Utensils, Coffee, ShoppingCart, Car, Bus, House, Lightbulb, Smartphone, Shirt, Gamepad2, Gift, Hospital, BookOpenCheck, BriefcaseBusiness, Wallet, Building2, Music2, PawPrint, Dumbbell, Baby, Scissors, Wrench, HeartPulse, Bookmark, KeyRound, Copy, LockKeyhole,
+  Trash2, WalletCards, X, ChevronDown, Check, Plane, MapPin, Utensils, Coffee, ShoppingCart, Car, Bus, House, Lightbulb, Smartphone, Shirt, Gamepad2, Gift, Hospital, BookOpenCheck, BriefcaseBusiness, Wallet, Building2, Music2, PawPrint, Dumbbell, Baby, Scissors, Wrench, HeartPulse, Bookmark, KeyRound, Copy, LockKeyhole,
 } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { supabase } from './supabase'
