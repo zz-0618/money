@@ -11,9 +11,17 @@ const SEARCH_TRADITIONAL = '廈臺萬與專業東兩嚴個為麗舉麼義烏樂�
 const SEARCH_SIMPLIFIED = '厦台万与专业东两严个为丽举么义乌乐习乡书买乱争于亏云亚产亲仅从们价众优会传伤体余儿党兰关兴养兽内写军农决况冻净凉减几凤凭凯击划刘则创删别剧劝办务动励劳势区医华协单卖卫厅历厉压厌广厂开异弃张弯强弹汇后径征恒恶恼爱惨惯庆忧怀态总恋战戏户损换据择挡担拟拢拦摄携摆摇败叙敌数斗断无旧时晕暂术机杀杂权条来极构枪柜标栈栋树样桥档检楼欢岁归残气汉汤沟灭沪滞济涛滥滨滩湾灯灵灾炉点炼烟烦烧热爷墙牵独获献环现毕画当叠疯发监盘盗尽础礼祸种积称稳谷窝竞笔筑范篮筹签粮纠纪约红纹纳纽线练组细织终经绑结绝统络给绿综纲网维缴罗罚罢翘圣闻联聪声职听肃胁脉肾脑脚脱脸腊肤胶胆脏舰舱艺节庄叶着萝处虚虫虾蚁蝇蜡蚕补装复衬袭见观规觉览觅视训讯记讲许论设访证评识诉词该详语误说请诸读课谁调谈谢译议让艳贝负财贡贫货贩贪责贵贷费贴贸贺贼宾赐赏赔贤赋质账购赠赞赶赵迹践车轨软转轮辑输辖辞边辽达迁过运还这进远违连迟适选遗邮邻丑释里鉴针钉钞钙铃铅银铜销锋钢录钱锦锅键锁钟铁钥长门闪闭问闲间阁队阳阴阵阶际陆险随隐只难鸡离电雾静页顶顷项顺须顿领头频题颜额风飞饭饮饱饿馆马驰驾验骑骗鱼鲁鲜鸟鸭鹅麦黄齐齿龙龟游'
 function normalizeSearch(value:string){
  const normalized=String(value||'').normalize('NFKC').toLocaleLowerCase('zh-TW')
+ const extraMap:Record<string,string>={
+  '蘋':'苹','苹':'苹',
+  '臺':'台','颱':'台','檯':'台',
+ }
  return Array.from(normalized).map(char=>{
-  const index=SEARCH_TRADITIONAL.indexOf(char)
-  return index>=0?SEARCH_SIMPLIFIED[index]:char
+  if(extraMap[char])return extraMap[char]
+  const traditionalIndex=SEARCH_TRADITIONAL.indexOf(char)
+  if(traditionalIndex>=0)return SEARCH_SIMPLIFIED[traditionalIndex]
+  const simplifiedIndex=SEARCH_SIMPLIFIED.indexOf(char)
+  if(simplifiedIndex>=0)return SEARCH_SIMPLIFIED[simplifiedIndex]
+  return char
  }).join('').replace(/\s+/g,' ').trim()
 }
 function platformOf(url:string){const u=url.toLowerCase();if(u.includes('facebook.com')||u.includes('fb.com'))return'facebook';if(u.includes('instagram.com'))return'instagram';if(u.includes('threads.net')||u.includes('threads.com'))return'threads';if(u.includes('xiaohongshu.com')||u.includes('xhslink.com'))return'xiaohongshu';if(u.includes('douyin.com'))return'douyin';return'other'}
