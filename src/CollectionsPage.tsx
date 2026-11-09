@@ -89,25 +89,22 @@ function SortFolders({title,rows,dragging,setDragging,drop,close}:any){return <d
 function FolderEditor({row,parentId,close,save}:any){const[name,setName]=useState(row?.name||'');return <div className="modal"><form className="panel collection-modal" onSubmit={e=>{e.preventDefault();if(name.trim())save(name.trim(),row?.id,parentId)}}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯資料夾':parentId?'新增子資料夾':'新增母資料夾'}</h2><label>資料夾名稱<input value={name} onChange={e=>setName(e.target.value)} required autoFocus/></label><button>儲存</button></form></div>}
 function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false)
  async function fetchMeta(){
-  const inputUrl=url.trim()
-  if(!inputUrl)return
-  setFetching(true)
+  const inputUrl=url.trim();if(!inputUrl)return;setFetching(true)
   try{
-   const detected=platformOf(inputUrl)
-   setPlatform(detected)
+   const detected=platformOf(inputUrl);setPlatform(detected)
    const{data,error}=await supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
-   if(error)throw error
-   if(data?.error)throw new Error(data.error)
-   const nextTitle=String(data?.title||data?.desc||data?.description||data?.aweme_detail?.desc||'').trim()
-   const nextBody=String(data?.body||data?.content||data?.description||data?.desc||data?.aweme_detail?.desc||'').trim()
-   const candidateImages=[data?.image_url,data?.thumbnail_url,data?.cover_url,data?.poster,data?.aweme_detail?.video?.cover?.url_list?.[0],data?.aweme_detail?.video?.origin_cover?.url_list?.[0],...(Array.isArray(data?.image_urls)?data.image_urls:[]),...(Array.isArray(data?.images)?data.images:[])].filter((value,index,array)=>typeof value==='string'&&value.trim()&&array.indexOf(value)===index)
-   if(nextTitle)setTitle(nextTitle)
-   if(nextBody)setBody(nextBody)
+   if(error)throw error;if(data?.error)throw new Error(data.error)
+   const rawTitle=String(data?.title||'').trim(),rawBody=String(data?.body||'').trim()
+   const douyinNoise=/于?20\d{6,8}发布在抖音|已经收获了?\d+个喜欢|来抖音[，, ]?记录美好生活/i
+   const cleanDouyin=(value:string)=>value.replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'').replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，').replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'').trim()
+   const nextTitle=detected==='douyin'&&douyinNoise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
+   const nextBody=detected==='douyin'&&douyinNoise.test(rawBody)?cleanDouyin(rawBody):rawBody
+   const candidateImages=[data?.image_url,data?.thumbnail_url,data?.cover_url,data?.poster,...(Array.isArray(data?.image_urls)?data.image_urls:[])].filter((v:any,i:number,a:any[])=>typeof v==='string'&&/^https?:\/\//i.test(v)&&a.indexOf(v)===i)
+   if(detected==='douyin'&&(!nextTitle||!nextBody||!candidateImages.length))throw new Error('抖音作品資料不完整，未取得真正的標題、內容或影片縮圖')
+   if(nextTitle)setTitle(nextTitle);if(nextBody)setBody(nextBody)
    if(candidateImages.length){setImages(candidateImages);setImage(candidateImages[0])}
-   if(data?.url||data?.resolved_url)setUrl(data.resolved_url||data.url)
-   setPlatform(data?.platform||detected)
-   if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用資料')
-   done(detected==='douyin'?'抖音標題、內容與影片縮圖已讀取':'文章資料已讀取',false)
+   if(data?.resolved_url||data?.url)setUrl(data.resolved_url||data.url);if(data?.platform)setPlatform(data.platform)
+   done(detected==='douyin'?'抖音作品資料已完整讀取':'文章資料已讀取',false)
   }catch(error:any){done(`讀取失敗：${error?.message||'來源網站未提供可讀取資料'}。連結已保留，可手動填寫。`,false)}finally{setFetching(false)}
  }
  async function save(e:FormEvent){e.preventDefault();const{error}=await supabase.rpc('save_saved_article',{p_id:row?.id||null,p_folder_id:folder||null,p_platform:platformOf(url)||platform,p_url:url.trim(),p_title:title.trim()||null,p_body:body.trim()||null,p_image_url:image.trim()||null,p_image_urls:images.length?images:(image.trim()?[image.trim()]:[])});if(error)return done(error.message,false);close();done(row?'收藏已更新':'文章已收藏');reload()}
