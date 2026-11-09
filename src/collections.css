@@ -86,3 +86,98 @@
 
 /* Link-preview feedback remains visible inside the article editor */
 .collection-fetch-message{margin:10px 0 14px;padding:12px 14px;border:1px solid;border-radius:12px;font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}.collection-fetch-message.success{border-color:#245f3d;background:#102b1c;color:#83efad}.collection-fetch-message.error{border-color:#673232;background:#301717;color:#ffabab}
+
+/* FINAL: parent and child folder cards use the same horizontal layout */
+.collection-folders{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+  margin-bottom:18px!important;
+  overflow:visible!important;
+}
+.collection-folders>.collection-folder-card{
+  width:100%!important;
+  min-width:0!important;
+  min-height:88px!important;
+  margin:0!important;
+  padding:14px 16px!important;
+  border:1px solid #303030!important;
+  border-radius:17px!important;
+  background:#151515!important;
+  color:#fff!important;
+  display:grid!important;
+  grid-template-columns:46px minmax(0,1fr)!important;
+  grid-template-rows:1fr!important;
+  align-items:center!important;
+  justify-items:stretch!important;
+  column-gap:13px!important;
+  text-align:left!important;
+  white-space:normal!important;
+}
+.collection-folders>.collection-folder-card>.collection-folder-icon{
+  grid-column:1!important;
+  grid-row:1!important;
+  width:46px!important;
+  height:46px!important;
+  min-width:46px!important;
+  max-width:46px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:14px!important;
+  background:#242424!important;
+  color:#d7d7d7!important;
+  display:grid!important;
+  place-items:center!important;
+  justify-self:start!important;
+  align-self:center!important;
+}
+.collection-folders>.collection-folder-card>.collection-folder-icon svg{
+  width:24px!important;
+  height:24px!important;
+}
+.collection-folders>.collection-folder-card>.collection-folder-copy{
+  grid-column:2!important;
+  grid-row:1!important;
+  min-width:0!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  align-self:center!important;
+  text-align:left!important;
+}
+.collection-folders>.collection-folder-card>.collection-folder-copy>strong{
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  color:#fff!important;
+  font-size:16px!important;
+  font-weight:700!important;
+  line-height:1.35!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.collection-folders>.collection-folder-card>.collection-folder-copy>small{
+  display:block!important;
+  width:100%!important;
+  margin:6px 0 0!important;
+  padding:0!important;
+  color:#858585!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+  text-align:left!important;
+  white-space:normal!important;
+}
+@media(max-width:900px){
+  .collection-folders{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+  .collection-folders{grid-template-columns:1fr!important}
+  .collection-folders>.collection-folder-card{min-height:82px!important;padding:13px!important}
+}
