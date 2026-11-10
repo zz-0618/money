@@ -103,7 +103,7 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
   try{
    const detected=platformOf(inputUrl);setPlatform(detected)
    const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
-   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（45 秒）。小紅書解析服務沒有在時間內回應，請稍後重試。')),45000))
+   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（60 秒）。小紅書解析服務沒有在時間內回應，請稍後重試。')),60000))
    const{data,error}=await Promise.race([invocation,timeout])
    if(error){
     let detail=error.message||'Edge Function 呼叫失敗'
