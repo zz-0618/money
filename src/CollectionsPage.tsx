@@ -96,8 +96,8 @@ export default function CollectionsPage({user,done}:any){
 function SortFolders({title,rows,dragging,setDragging,drop,close}:any){return <div className="modal"><div className="panel collection-modal collection-sort-modal"><button className="modal-close" onClick={close}><X/></button><h2>{title}</h2>{rows.length?<div className="collection-sort-list">{rows.map((x:FolderRow)=><div draggable onDragStart={()=>setDragging(x.id)} onDragOver={(e:any)=>e.preventDefault()} onDrop={()=>drop(x.id)} className={dragging===x.id?'dragging':''} key={x.id}><GripVertical/><span>{x.name}</span></div>)}</div>:<p className="empty">目前沒有可排序的資料夾</p>}</div></div>}
 function FolderEditor({row,parentId,close,save}:any){const[name,setName]=useState(row?.name||'');return <div className="modal"><form className="panel collection-modal" onSubmit={e=>{e.preventDefault();if(name.trim())save(name.trim(),row?.id,parentId)}}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯資料夾':parentId?'新增子資料夾':'新增母資料夾'}</h2><label>資料夾名稱<input value={name} onChange={e=>setName(e.target.value)} required autoFocus/></label><button>儲存</button></form></div>}
 function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false),[fetchMessage,setFetchMessage]=useState<{type:'success'|'error';text:string}|null>(null)
- async function fetchMeta(){
-  const inputUrl=url.trim()
+ async function fetchMeta(overrideUrl?:string){
+  const inputUrl=(overrideUrl||url).trim()
   if(!inputUrl){setFetchMessage({type:'error',text:'請先貼上文章連結'});return}
   setFetching(true);setFetchMessage(null)
   try{
@@ -111,6 +111,15 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
     throw new Error(detail)
    }
    if(!data||typeof data!=='object')throw new Error('Edge Function 沒有回傳 JSON 資料')
+   if(data.browser_fallback){
+    const openUrl=String(data.open_url||inputUrl)
+    window.open(openUrl,'_blank','noopener,noreferrer')
+    const pasted=window.prompt('已在新分頁開啟小紅書。請等待貼文顯示後，複製瀏覽器網址列中的完整 xiaohongshu.com 網址（需保留 xsec_token），貼到這裡：','')?.trim()
+    if(!pasted)throw new Error(String(data.error||'未貼上瀏覽器中的完整小紅書網址'))
+    if(!/^https?:\/\//i.test(pasted))throw new Error('貼上的網址格式不正確')
+    setUrl(pasted);setPlatform('xiaohongshu')
+    return await fetchMeta(pasted)
+   }
    if(data.ok===false||data.error)throw new Error(String(data.error||'文章資料讀取失敗'))
    const returnedPlatform=String(data.platform||detected)
    const rawTitle=String(data.title||'').trim(),rawBody=String(data.body||'').trim()
@@ -137,4 +146,4 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
   }finally{setFetching(false)}
  }
  async function save(e:FormEvent){e.preventDefault();const{error}=await supabase.rpc('save_saved_article',{p_id:row?.id||null,p_folder_id:folder||null,p_platform:platformOf(url)||platform,p_url:url.trim(),p_title:title.trim()||null,p_body:body.trim()||null,p_image_url:image.trim()||null,p_image_urls:images.length?images:(image.trim()?[image.trim()]:[])});if(error)return done(error.message,false);close();done(row?'收藏已更新':'文章已收藏');reload()}
- return <div className="modal collection-editor-overlay"><form className="panel collection-modal collection-article-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯收藏':'收藏文章'}</h2><label>文章連結<div className="collection-url"><input type="url" value={url} onChange={e=>{setUrl(e.target.value);setPlatform(platformOf(e.target.value))}} required/><button type="button" disabled={fetching} onClick={fetchMeta}>{fetching?'讀取中':'讀取'}</button></div></label>{fetchMessage&&<div className={'collection-fetch-message '+fetchMessage.type} role="status" aria-live="polite">{fetchMessage.text}</div>}<label>資料夾<select value={folder} onChange={e=>setFolder(e.target.value)}><option value="">未分類</option>{folders.map((f:any)=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label><label>文章標題<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>文章圖片網址<input type="url" value={image} onChange={e=>setImage(e.target.value)}/></label><label>文章內文<textarea value={body} onChange={e=>setBody(e.target.value)}/></label>{(images.length||image)&&<div className="collection-image-gallery">{(images.length?images:[image]).map((src:string,i:number)=><img className="collection-image-preview" src={src} alt={`預覽 ${i+1}`} key={src+i}/>)}</div>}<button>儲存收藏</button></form></div>}
+ return <div className="modal collection-editor-overlay"><form className="panel collection-modal collection-article-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯收藏':'收藏文章'}</h2><label>文章連結<div className="collection-url"><input type="url" value={url} onChange={e=>{setUrl(e.target.value);setPlatform(platformOf(e.target.value))}} required/><button type="button" disabled={fetching} onClick={()=>fetchMeta()}>{fetching?'讀取中':'讀取'}</button></div></label>{fetchMessage&&<div className={'collection-fetch-message '+fetchMessage.type} role="status" aria-live="polite">{fetchMessage.text}</div>}<label>資料夾<select value={folder} onChange={e=>setFolder(e.target.value)}><option value="">未分類</option>{folders.map((f:any)=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label><label>文章標題<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>文章圖片網址<input type="url" value={image} onChange={e=>setImage(e.target.value)}/></label><label>文章內文<textarea value={body} onChange={e=>setBody(e.target.value)}/></label>{(images.length||image)&&<div className="collection-image-gallery">{(images.length?images:[image]).map((src:string,i:number)=><img className="collection-image-preview" src={src} alt={`預覽 ${i+1}`} key={src+i}/>)}</div>}<button>儲存收藏</button></form></div>}
