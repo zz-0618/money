@@ -111,17 +111,22 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    if(!data||typeof data!=='object')throw new Error('Edge Function 沒有回傳 JSON 資料')
    if(data.ok===false||data.error)throw new Error(String(data.error||'文章資料讀取失敗'))
    const rawTitle=String(data.title||'').trim(),rawBody=String(data.body||'').trim()
-   const noise=/于?20\d{6,8}发布在抖音|已经收获了?\d+个喜欢|来抖音[，, ]?记录美好生活/i
+   const douyinNoise=/于?20\d{6,8}发布在抖音|已经收获了?\d+个喜欢|来抖音[，, ]?记录美好生活/i
    const cleanDouyin=(value:string)=>value.replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'').replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，').replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'').trim()
-   const nextTitle=detected==='douyin'&&noise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
-   const nextBody=detected==='douyin'&&noise.test(rawBody)?cleanDouyin(rawBody):rawBody
+   const nextTitle=detected==='douyin'&&douyinNoise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
+   const nextBody=detected==='douyin'&&douyinNoise.test(rawBody)?cleanDouyin(rawBody):rawBody
    const candidateImages=[data.image_url,data.thumbnail_url,data.cover_url,data.poster,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((v:any,i:number,a:any[])=>typeof v==='string'&&/^https?:\/\//i.test(v)&&a.indexOf(v)===i)
    const missing=[!nextTitle?'標題':'',!nextBody?'內容':'',!candidateImages.length?'影片縮圖':''].filter(Boolean)
    if(detected==='douyin'&&missing.length)throw new Error(`抖音作品資料不完整，缺少：${missing.join('、')}`)
+   const xhsNoise=/登入\s*-\s*rednote|share,\s*connect,\s*love|來小紅書[，, ]*與全世界最有趣的人做朋友|登录\s*-\s*小红书/i
+   if(detected==='xiaohongshu'){
+    const xhsMissing=[!nextTitle||xhsNoise.test(nextTitle)?'標題':'',!nextBody||xhsNoise.test(nextBody)?'內文':'',!candidateImages.length?'圖片':''].filter(Boolean)
+    if(xhsMissing.length)throw new Error(`小紅書貼文資料不完整，缺少：${xhsMissing.join('、')}`)
+   }
    if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內容或圖片')
    setTitle(nextTitle);setBody(nextBody);setImages(candidateImages);setImage(candidateImages[0]||'')
    if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url));setPlatform(String(data.platform||detected))
-   const text=detected==='douyin'?'抖音作品資料已完整讀取':'文章資料已讀取'
+   const text=detected==='douyin'?'抖音作品資料已完整讀取':detected==='xiaohongshu'?'小紅書貼文資料已完整讀取':'文章資料已讀取'
    setFetchMessage({type:'success',text});done(text,false)
   }catch(error:any){
    const text=`讀取失敗：${error?.message||'來源網站未提供可讀取資料'}。連結已保留，可手動填寫。`
