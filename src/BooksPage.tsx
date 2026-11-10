@@ -16,6 +16,7 @@ import './books.css'
 
 type BookStatus = 'want' | 'reading' | 'finished'
 type ResultKind = 'work' | 'edition'
+type SearchType = 'taiwan' | 'jjwxc'
 
 type ApiBookResult = {
   kind?: ResultKind
@@ -278,6 +279,7 @@ export default function BooksPage({ user, done }: any) {
 
 function BookEditor({ user, row, done, reload, close }: any) {
   const [query, setQuery] = useState(row?.title || '')
+  const [searchType, setSearchType] = useState<SearchType>(row?.source === 'jjwxc' ? 'jjwxc' : 'taiwan')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<BookResult[]>([])
   const [picked, setPicked] = useState<BookResult | null>(row || null)
@@ -298,7 +300,7 @@ function BookEditor({ user, row, done, reload, close }: any) {
 
     try {
       const { data, error } = await supabase.functions.invoke('book-search', {
-        body: { action: 'search', query: keyword },
+        body: { action: 'search', query: keyword, search_type: searchType },
       })
 
       if (error) throw error
@@ -314,15 +316,25 @@ function BookEditor({ user, row, done, reload, close }: any) {
         .map((item, index) => normalizeResult(item, index))
         .filter((item): item is BookResult => item !== null)
 
-      setResults(normalized)
+      const preferred = searchType === 'jjwxc'
+        ? normalized.filter(book => book.source === 'jjwxc' || book.work_type === 'web_novel')
+        : normalized.filter(book => book.source !== 'jjwxc' && book.work_type !== 'web_novel')
+
+      const fallback = searchType === 'jjwxc'
+        ? normalized.filter(book => book.source !== 'jjwxc' && book.work_type !== 'web_novel')
+        : normalized.filter(book => book.source === 'jjwxc' || book.work_type === 'web_novel')
+
+      const ordered = preferred.length > 0 ? preferred : fallback
+      setResults(ordered)
 
       const statuses: SourceStatus[] = Array.isArray(data?.source_status)
         ? data.source_status
         : []
       const summary = sourceStatusText(statuses)
 
-      if (normalized.length > 0) {
-        done(`找到 ${normalized.length} 筆可選資料。${summary}`, false)
+      if (ordered.length > 0) {
+        const usedFallback = preferred.length === 0 && fallback.length > 0
+        done(`${usedFallback ? '優先類型找不到，已顯示其他來源。' : ''}找到 ${ordered.length} 筆可選資料。${summary}`, false)
         return
       }
 
@@ -421,6 +433,22 @@ function BookEditor({ user, row, done, reload, close }: any) {
         <h2>{row ? '編輯' : '新增'}書籍</h2>
 
         <label>
+          類型
+          <select
+            value={searchType}
+            onChange={event => {
+              setSearchType(event.target.value as SearchType)
+              setResults([])
+              setPicked(null)
+              setManual(false)
+            }}
+          >
+            <option value="taiwan">臺灣書籍</option>
+            <option value="jjwxc">晉江小說</option>
+          </select>
+        </label>
+
+        <label>
           搜尋書名、作者或 ISBN
           <div className="book-search">
             <input
@@ -437,7 +465,7 @@ function BookEditor({ user, row, done, reload, close }: any) {
                   search()
                 }
               }}
-              placeholder="台灣書籍、作者、ISBN 或中國網路小說"
+              placeholder={searchType === 'jjwxc' ? '輸入晉江小說書名或作者' : '輸入臺灣書名、作者或 ISBN'}
             />
             <button type="button" disabled={searching} onClick={search}>
               <Search />{searching ? '搜尋中' : '搜尋'}
