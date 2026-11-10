@@ -19,5 +19,8 @@
       "invocation_logs": true,
       "persist": true
     }
+  },
+"vars": {
+    "VITE_GOOGLE_MAPS_API_KEY": "AIzaSyBUsFxyszEtFeLLVXzg9mTLHPKKDxxKX9I"
   }
 }
