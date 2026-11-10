@@ -11,6 +11,7 @@ import * as XLSX from 'xlsx'
 import TravelPage from './TravelPage'
 import CollectionsPage from './CollectionsPage'
 import PocketListPage from './PocketListPage'
+import HealthPage from './HealthPage'
 
 type Account={id:string;name:string;kind:string;currency:string;balance:number|string;initial_balance?:number|string;icon_key?:string|null;sort_order?:number;created_at?:string;credit_limit?:number|string|null;payment_day?:number|null;linked_bank_account_id?:string|null}
 type Tx={id:string;kind:'expense'|'income'|'transfer';amount:number|string;currency:string;account_id:string;transfer_to_account_id?:string|null;category_id?:string|null;note?:string;occurred_at:string;fee?:number|string;original_amount?:number|string|null;original_currency?:string|null;base_amount?:number|string|null;base_currency?:string|null;exchange_rate?:number|string|null;advance_enabled?:boolean;advance_person?:string|null;advance_amount?:number|string|null;advance_returned?:boolean;advance_return_account_id?:string|null}
@@ -94,7 +95,7 @@ export default function App(){
   const[todos,setTodos]=useState<Todo[]>([])
   const[journals,setJournals]=useState<Journal[]>([])
   const[categories,setCategories]=useState<Category[]>([])
-  const[settings,setSettings]=useState<SettingsRow>({nickname:'',default_currency:'TWD',quick_nav:['home','accounts','ledger','todo'],feature_order:['home','accounts','ledger','todo','journal','travel','collections','pocket','passwords','settings']})
+  const[settings,setSettings]=useState<SettingsRow>({nickname:'',default_currency:'TWD',quick_nav:['home','accounts','ledger','todo'],feature_order:['home','accounts','ledger','todo','journal','travel','collections','pocket','health','passwords','settings']})
   const[adjustments,setAdjustments]=useState<BalanceAdjustment[]>([])
   const[repayments,setRepayments]=useState<CreditCardRepayment[]>([])
   const[msg,setMsg]=useState('')
@@ -125,10 +126,10 @@ export default function App(){
   const income=currentMonthTxs.filter(x=>x.kind==='income').reduce((sum,x)=>sum+Number(x.base_amount??x.amount),0)
   const expense=currentMonthTxs.filter(x=>x.kind==='expense').reduce((sum,x)=>sum+reportAmount(x)+Number(x.fee||0),0)
   const net=accounts.filter(a=>a.kind!=='debit_card').reduce((s,a)=>s+(a.kind==='credit_card'?-1:a.kind==='liability'?-1:1)*Number(a.balance),0)
-  const labels:any={home:'財務總覽',accounts:'帳戶',ledger:'記帳',todo:'待辦',journal:'日記',settings:'設定',travel:'旅遊',collections:'收藏文章',pocket:'口袋名單',passwords:'密碼',more:'更多功能'}
-  const featureDefs:any={home:[LayoutDashboard,'總覽'],accounts:[Landmark,'帳戶'],ledger:[WalletCards,'記帳'],todo:[CheckCircle2,'待辦'],journal:[BookOpen,'日記'],travel:[Plane,'旅遊'],collections:[Bookmark,'收藏'],pocket:[MapPin,'口袋名單'],passwords:[KeyRound,'密碼'],settings:[Settings,'設定']}
+  const labels:any={home:'財務總覽',accounts:'帳戶',ledger:'記帳',todo:'待辦',journal:'日記',settings:'設定',travel:'旅遊',collections:'收藏文章',pocket:'口袋名單',health:'健康',passwords:'密碼',more:'更多功能'}
+  const featureDefs:any={home:[LayoutDashboard,'總覽'],accounts:[Landmark,'帳戶'],ledger:[WalletCards,'記帳'],todo:[CheckCircle2,'待辦'],journal:[BookOpen,'日記'],travel:[Plane,'旅遊'],collections:[Bookmark,'收藏'],pocket:[MapPin,'口袋名單'],health:[HeartPulse,'健康'],passwords:[KeyRound,'密碼'],settings:[Settings,'設定']}
   const quickNav=(settings.quick_nav?.length?settings.quick_nav:['home','accounts','ledger','todo']).filter((id:string)=>featureDefs[id]).slice(0,4)
-  const savedFeatureOrder=(settings.feature_order?.length?settings.feature_order:['home','accounts','ledger','todo','journal','travel','collections','pocket','passwords','settings']);const featureOrder=[...savedFeatureOrder,...Object.keys(featureDefs).filter(id=>!savedFeatureOrder.includes(id))].filter((id:string)=>featureDefs[id])
+  const savedFeatureOrder=(settings.feature_order?.length?settings.feature_order:['home','accounts','ledger','todo','journal','travel','collections','pocket','health','passwords','settings']);const featureOrder=[...savedFeatureOrder,...Object.keys(featureDefs).filter(id=>!savedFeatureOrder.includes(id))].filter((id:string)=>featureDefs[id])
   const done=(m?:string,reload=true)=>{if(m)setMsg(m);if(reload)load()}
 
   return <div className="shell"><aside><div className="brand"><CircleDollarSign/>財日記</div>{quickNav.map((id:string)=>{const[Icon,label]=featureDefs[id];return <button className={view===id?'active':''} onClick={()=>setView(id)} key={id}><Icon size={19}/>{label}</button>})}<button className={view==='more'?'active':''} onClick={()=>setView('more')}><Menu size={19}/>更多</button><button className="logout" onClick={()=>supabase.auth.signOut()}><LogOut size={18}/>登出</button></aside><main><header><div><small>{settings.nickname?`${settings.nickname}・跨裝置同步`:'跨裝置同步'}</small><h1>{labels[view]}</h1></div><div className="header-actions"><span className="status">● 已連線</span></div></header>{msg&&<div className="toast">{msg}</div>}
@@ -139,6 +140,7 @@ export default function App(){
     {view==='travel'&&<TravelPage user={user} done={done}/>} 
     {view==='collections'&&<CollectionsPage user={user} done={done}/>} 
     {view==='pocket'&&<PocketListPage user={user} done={done}/>} 
+    {view==='health'&&<HealthPage user={user} done={done}/>} 
     {view==='passwords'&&<PasswordVaultPage user={user} done={done}/>} 
     {view==='journal'&&<JournalPage user={user} items={journals} categories={categories} done={done}/>} 
     {view==='more'&&<MorePage quickNav={quickNav} featureOrder={featureOrder} featureDefs={featureDefs} onOpen={setView} user={user} done={done}/>} 
@@ -387,7 +389,7 @@ function Todos({user,items,categories,done,onItemsChange}:any){
   return <div className="twocol"><form className="panel" onSubmit={save}><h2>{editing?'修改待辦':'新增待辦'}</h2><input placeholder="待辦事項" value={title} onChange={e=>setTitle(e.target.value)} required/><input type="date" value={date} onChange={e=>setDate(e.target.value)}/><select value={category} onChange={e=>setCategory(e.target.value)}><option value="">未分類</option>{list.map((x:Category)=><option key={x.id} value={x.id}>{x.name}</option>)}</select><input placeholder="地點" value={location} onChange={e=>setLocation(e.target.value)}/><button disabled={saving}>{saving?'儲存中…':editing?'儲存修改':'加入'}</button>{editing&&<button type="button" className="secondary-form-button" onClick={reset}>取消修改</button>}</form><section className="panel"><h2>待辦清單</h2>{active.length?active.map(row):<p className="empty">目前沒有未完成事項</p>}<button type="button" className="completed-toggle" onClick={()=>setShowCompleted(v=>!v)}><span>已完成事項（{completed.length}）</span><ChevronDown className={showCompleted?'open':''} size={18}/></button>{showCompleted&&<div className="completed-list">{completed.length?completed.map(row):<p className="empty">尚無完成事項</p>}</div>}</section></div>}
 
 function MorePage({quickNav,featureOrder,featureDefs,onOpen,user,done}:any){
-  const fallback=['home','accounts','ledger','todo','journal','travel','collections','pocket','passwords','settings']
+  const fallback=['home','accounts','ledger','todo','journal','travel','collections','pocket','health','passwords','settings']
   const initial=[...(featureOrder?.length?featureOrder:fallback),...fallback].filter((id:string,i:number,a:string[])=>featureDefs[id]&&a.indexOf(id)===i)
   const[order,setOrder]=useState<string[]>(initial),[dragging,setDragging]=useState('')
   useEffect(()=>{const next=[...(featureOrder?.length?featureOrder:fallback),...fallback].filter((id:string,i:number,a:string[])=>featureDefs[id]&&a.indexOf(id)===i);setOrder(next)},[JSON.stringify(featureOrder||[])])
