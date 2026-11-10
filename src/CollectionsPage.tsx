@@ -14,6 +14,17 @@ function normalizeSearch(value:string){
  const extraMap:Record<string,string>={
   '蘋':'苹','苹':'苹',
   '臺':'台','颱':'台','檯':'台',
+  // Japanese place names / Traditional-Simplified variants used in travel collections.
+  '岡':'冈','冈':'冈',
+  '絲':'丝','糸':'丝','丝':'丝',
+  '島':'岛','岛':'岛',
+  '縣':'县','县':'县',
+  '區':'区','区':'区',
+  '門':'门','门':'门',
+  '廣':'广','广':'广',
+  '龍':'龙','龙':'龙',
+  '馬':'马','马':'马',
+  '鳥':'鸟','鸟':'鸟',
  }
  return Array.from(normalized).map(char=>{
   if(extraMap[char])return extraMap[char]
