@@ -355,10 +355,8 @@ function BookEditor({ user, row, done, reload, close }: any) {
     setManual(false)
   }
 
-  async function cacheSelected(book: BookResult) {
-    if (book.source === 'manual' || book.source === 'local') return
-
-    const cacheItem = {
+  function toApiItem(book: BookResult) {
+    return {
       kind: book.kind || (book.work_type === 'web_novel' ? 'work' : 'edition'),
       source: book.source,
       source_id: book.source_id,
@@ -374,13 +372,6 @@ function BookEditor({ user, row, done, reload, close }: any) {
       origin_region: book.origin_region || '',
       source_platform: book.source_platform || book.source,
     }
-
-    const { data, error } = await supabase.functions.invoke('book-search', {
-      body: { action: 'cache', item: cacheItem },
-    })
-
-    if (error) throw error
-    if (data?.error && data?.ok === false) throw new Error(data.error)
   }
 
   async function save(event: FormEvent) {
@@ -389,40 +380,42 @@ function BookEditor({ user, row, done, reload, close }: any) {
     if (!picked.title.trim()) return done('請輸入書名', false)
 
     try {
-      await cacheSelected(picked)
+      const quotes = status !== 'want'
+        ? quotesText.split('\n').map((value: string) => value.trim()).filter(Boolean)
+        : []
 
-      const payload = {
-        user_id: user.id,
-        source: picked.source,
-        source_id: picked.source_id,
-        title: picked.title.trim(),
-        isbn: picked.isbn || null,
-        image_url: picked.image_url || null,
-        author: picked.author || null,
-        publisher: picked.publisher || null,
-        description: picked.description || null,
-        source_url: picked.source_url || null,
-        status,
-        rating: status !== 'want' && rating ? Number(rating) : null,
-        review: status !== 'want' ? review.trim() || null : null,
-        quotes: status !== 'want'
-          ? quotesText.split('\n').map((value: string) => value.trim()).filter(Boolean)
-          : [],
-        updated_at: new Date().toISOString(),
-      }
+      const { data, error } = await supabase.functions.invoke('book-search', {
+        body: {
+          action: 'save',
+          bookshelf_id: row?.id || null,
+          item: toApiItem(picked),
+          reading: {
+            status,
+            rating: status !== 'want' && rating ? Number(rating) : null,
+            review: status !== 'want' ? review.trim() || null : null,
+            quotes,
+          },
+        },
+      })
 
-      const request = row?.id
-        ? supabase.from('bookshelf_items').update(payload).eq('id', row.id)
-        : supabase.from('bookshelf_items').insert(payload)
-
-      const { error } = await request
       if (error) throw error
+      if (!data?.ok) throw new Error(data?.error || '儲存失敗')
 
       close()
       await reload()
       done(row?.id ? '書籍已更新' : '書籍已新增', false)
     } catch (error: any) {
-      done(`儲存失敗：${error?.message || String(error)}`, false)
+      const context = error?.context
+      let detail = ''
+      if (context instanceof Response) {
+        try {
+          const responseData = await context.clone().json()
+          detail = responseData?.error || responseData?.message || ''
+        } catch {
+          try { detail = await context.clone().text() } catch { /* ignore */ }
+        }
+      }
+      done(`儲存失敗：${detail || error?.message || String(error)}`, false)
     }
   }
 
