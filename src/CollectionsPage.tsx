@@ -102,7 +102,9 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
   setFetching(true);setFetchMessage(null)
   try{
    const detected=platformOf(inputUrl);setPlatform(detected)
-   const{data,error}=await supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
+   const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
+   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（45 秒）。小紅書解析服務沒有在時間內回應，請稍後重試。')),45000))
+   const{data,error}=await Promise.race([invocation,timeout])
    if(error){
     let detail=error.message||'Edge Function 呼叫失敗'
     try{const context=(error as any)?.context;if(context instanceof Response){const payload=await context.clone().json();detail=payload?.error||payload?.message||detail}}catch{}
