@@ -129,6 +129,9 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    const cleanDouyin=(value:string)=>value.replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'').replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，').replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'').trim()
    const nextTitle=returnedPlatform==='douyin'&&douyinNoise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
    const nextBody=returnedPlatform==='douyin'&&douyinNoise.test(rawBody)?cleanDouyin(rawBody):rawBody
+   const blockedSocial=/this content isn[’']t available(?: to everyone)?|content isn[’']t available|log in to threads|sign up for threads/i
+   const titleNoise=/^(facebook|instagram|threads|登入|login|rednote|小紅書)(\s*[-|｜].*)?$/i
+   if(['facebook','instagram','threads'].includes(returnedPlatform)&&(titleNoise.test(nextTitle)||blockedSocial.test(nextBody)))throw new Error(`${returnedPlatform} 目前只回傳登入／限制頁，沒有取得真正貼文內容`)
    const candidateImages=[data.image_url,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((value:any,index:number,array:any[])=>typeof value==='string'&&/^https?:\/\//i.test(value)&&array.indexOf(value)===index)
    if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內文或圖片')
    setTitle(nextTitle||nextBody.slice(0,70)||returnedPlatform)
