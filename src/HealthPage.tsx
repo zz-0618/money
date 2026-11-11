@@ -41,7 +41,7 @@ type FoodNutrition = {
   protein: number
   fat: number
   carbs: number
-  source?: 'local' | 'familymart'
+  source?: 'local' | 'familymart' | 'familymart-local'
   serving_g?: number | null
   serving_text?: string
   source_url?: string
@@ -386,7 +386,7 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
           ? data.map((food: FoodNutrition) => ({
               ...food,
               aliases: Array.isArray(food.aliases) ? food.aliases : [],
-              source: 'local',
+              source: food.source || 'local',
             }))
           : []
         setFoods(localFoods)
@@ -630,9 +630,11 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
                       <small>
                         {food.source === 'familymart'
                           ? `全家官方・${food.serving_text || '每份營養標示'}`
-                          : food.aliases.length
-                            ? `俗名：${food.aliases.join('、')}`
-                            : '本地食品資料庫・每 100 g'}
+                          : food.source === 'familymart-local'
+                            ? `全家商品資料庫・每 100 g${food.aliases.length ? `・分類：${food.aliases.join('、')}` : ''}`
+                            : food.aliases.length
+                              ? `俗名：${food.aliases.join('、')}`
+                              : '本地食品資料庫・每 100 g'}
                       </small>
                     </span>
                     <em>
@@ -653,10 +655,12 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
               <small>
                 {selectedFood.source === 'familymart'
                   ? `資料來源：全家食在購安心・${selectedFood.serving_text || '每份營養標示'}；實際數值請以商品包裝為準。`
-                  : '營養資料為每 100 g 可食部分，已依份量換算。'}
+                  : selectedFood.source === 'familymart-local'
+                    ? '資料來源：全家商品營養資料庫；營養資料以每 100 g 換算，實際數值請以商品包裝為準。'
+                    : '營養資料為每 100 g 可食部分，已依份量換算。'}
               </small>
               {selectedFood.source_url && (
-                <a href={selectedFood.source_url} target="_blank" rel="noreferrer">查看全家官方商品資料</a>
+                <a href={selectedFood.source_url} target="_blank" rel="noreferrer">查看商品來源資料</a>
               )}
             </div>
             <label>
