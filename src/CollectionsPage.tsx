@@ -114,7 +114,7 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
   try{
    const detected=platformOf(inputUrl);setPlatform(detected)
    const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
-   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（60 秒）。小紅書解析服務沒有在時間內回應，請稍後重試。')),60000))
+   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（60 秒）。來源平台解析服務沒有在時間內回應，請稍後重試。')),60000))
    const{data,error}=await Promise.race([invocation,timeout])
    if(error){
     let detail=error.message||'Edge Function 呼叫失敗'
@@ -146,10 +146,15 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
     const xhsMissing=[!nextTitle||xhsNoise.test(nextTitle)?'標題':'',!nextBody||xhsNoise.test(nextBody)?'內文':'',!candidateImages.length?'圖片':''].filter(Boolean)
     if(xhsMissing.length)throw new Error(`小紅書貼文資料不完整，缺少：${xhsMissing.join('、')}`)
    }
+   if(['facebook','instagram','threads'].includes(returnedPlatform)||['facebook','instagram','threads'].includes(detected)){
+    const socialNoise=/^(facebook|instagram|threads)(\s*[-|｜].*)?$/i
+    const socialMissing=[!nextTitle||socialNoise.test(nextTitle)?'標題':'',!nextBody?'內文':'',!candidateImages.length?'圖片':''].filter(Boolean)
+    if(socialMissing.length)throw new Error(`${returnedPlatform} 貼文資料不完整，缺少：${socialMissing.join('、')}`)
+   }
    if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內容或圖片')
    setTitle(nextTitle);setBody(nextBody);setImages(candidateImages);setImage(candidateImages[0]||'')
    if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url));setPlatform(returnedPlatform)
-   const text=returnedPlatform==='douyin'?'抖音作品資料已完整讀取':returnedPlatform==='xiaohongshu'?'小紅書貼文資料已完整讀取':'文章資料已讀取'
+   const text=returnedPlatform==='douyin'?'抖音作品資料已完整讀取':returnedPlatform==='xiaohongshu'?'小紅書貼文資料已完整讀取':returnedPlatform==='threads'?'Threads 貼文資料已完整讀取':returnedPlatform==='instagram'?'Instagram 貼文資料已完整讀取':returnedPlatform==='facebook'?'Facebook 貼文資料已完整讀取':'文章資料已讀取'
    setFetchMessage({type:'success',text});done(text,false)
   }catch(error:any){
    const text=`讀取失敗：${error?.message||'來源網站未提供可讀取資料'}。連結已保留，可手動填寫。`
