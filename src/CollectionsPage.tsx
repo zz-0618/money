@@ -107,14 +107,14 @@ export default function CollectionsPage({user,done}:any){
 function SortFolders({title,rows,dragging,setDragging,drop,close}:any){return <div className="modal"><div className="panel collection-modal collection-sort-modal"><button className="modal-close" onClick={close}><X/></button><h2>{title}</h2>{rows.length?<div className="collection-sort-list">{rows.map((x:FolderRow)=><div draggable onDragStart={()=>setDragging(x.id)} onDragOver={(e:any)=>e.preventDefault()} onDrop={()=>drop(x.id)} className={dragging===x.id?'dragging':''} key={x.id}><GripVertical/><span>{x.name}</span></div>)}</div>:<p className="empty">目前沒有可排序的資料夾</p>}</div></div>}
 function FolderEditor({row,parentId,close,save}:any){const[name,setName]=useState(row?.name||'');return <div className="modal"><form className="panel collection-modal" onSubmit={e=>{e.preventDefault();if(name.trim())save(name.trim(),row?.id,parentId)}}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯資料夾':parentId?'新增子資料夾':'新增母資料夾'}</h2><label>資料夾名稱<input value={name} onChange={e=>setName(e.target.value)} required autoFocus/></label><button>儲存</button></form></div>}
 function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false),[fetchMessage,setFetchMessage]=useState<{type:'success'|'error';text:string}|null>(null)
- async function fetchMeta(overrideUrl?:string){
-  const inputUrl=(overrideUrl||url).trim()
+ async function fetchMeta(){
+  const inputUrl=url.trim()
   if(!inputUrl){setFetchMessage({type:'error',text:'請先貼上文章連結'});return}
   setFetching(true);setFetchMessage(null)
   try{
    const detected=platformOf(inputUrl);setPlatform(detected)
-   const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl,platform:detected,resolve_short_url:true}})
-   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（60 秒）。來源平台解析服務沒有在時間內回應，請稍後重試。')),60000))
+   const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl}})
+   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（50 秒），請稍後重試')),50000))
    const{data,error}=await Promise.race([invocation,timeout])
    if(error){
     let detail=error.message||'Edge Function 呼叫失敗'
@@ -129,13 +129,16 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    const cleanDouyin=(value:string)=>value.replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'').replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，').replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'').trim()
    const nextTitle=returnedPlatform==='douyin'&&douyinNoise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
    const nextBody=returnedPlatform==='douyin'&&douyinNoise.test(rawBody)?cleanDouyin(rawBody):rawBody
-   const candidateImages=[data.image_url,data.thumbnail_url,data.cover_url,data.poster,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((v:any,i:number,a:any[])=>typeof v==='string'&&/^https?:\/\//i.test(v)&&a.indexOf(v)===i)
-   const missing=[!nextTitle?'標題':'',!nextBody?'內容':'',!candidateImages.length?'影片縮圖':''].filter(Boolean)
-   if(returnedPlatform==='douyin'&&missing.length)throw new Error(`抖音作品資料不完整，缺少：${missing.join('、')}`)
-   if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內容或圖片')
-   setTitle(nextTitle);setBody(nextBody);setImages(candidateImages);setImage(candidateImages[0]||'')
-   if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url));setPlatform(returnedPlatform)
-   const text=returnedPlatform==='douyin'?'抖音作品資料已完整讀取':returnedPlatform==='xiaohongshu'?'小紅書貼文資料已完整讀取':returnedPlatform==='threads'?'Threads 貼文資料已完整讀取':returnedPlatform==='instagram'?'Instagram 貼文資料已完整讀取':returnedPlatform==='facebook'?'Facebook 貼文資料已完整讀取':'文章資料已讀取'
+   const candidateImages=[data.image_url,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((value:any,index:number,array:any[])=>typeof value==='string'&&/^https?:\/\//i.test(value)&&array.indexOf(value)===index)
+   if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內文或圖片')
+   setTitle(nextTitle||nextBody.slice(0,70)||returnedPlatform)
+   setBody(nextBody)
+   setImages(candidateImages)
+   setImage(candidateImages[0]||'')
+   if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url))
+   setPlatform(returnedPlatform)
+   const names:Record<string,string>={facebook:'Facebook',instagram:'Instagram',threads:'Threads',xiaohongshu:'小紅書',douyin:'抖音',other:'文章'}
+   const text=`${names[returnedPlatform]||'文章'}資料已讀取`
    setFetchMessage({type:'success',text});done(text,false)
   }catch(error:any){
    const text=`讀取失敗：${error?.message||'來源網站未提供可讀取資料'}。連結已保留，可手動填寫。`
