@@ -13,10 +13,21 @@ export default function DramaPage({user,done}:any){
  async function load(){setLoading(true);const[c,d]=await Promise.all([supabase.from('drama_categories').select('*').order('sort_order'),supabase.from('dramas').select('*,drama_watch_entries(*)').order('updated_at',{ascending:false})]);if(c.error||d.error)done(`追劇資料讀取失敗：${c.error?.message||d.error?.message}`,false);setCategories(c.data||[]);setRows((d.data||[]).map((x:any)=>({...x,drama_watch_entries:[...(x.drama_watch_entries||[])].sort((a:any,b:any)=>b.watched_on.localeCompare(a.watched_on))})));setLoading(false)}
  useEffect(()=>{load()},[])
  const visible=useMemo(()=>rows.filter(x=>filter==='all'||(filter==='watched'?x.is_watched:filter==='unwatched'?!x.is_watched:x.category_id===filter)),[rows,filter])
- async function upload(file:File,folder:string){const ext=file.name.split('.').pop()||'jpg',path=`${user.id}/${folder}/${crypto.randomUUID()}.${ext}`;const{error}=await supabase.storage.from('drama-images').upload(path,file);if(error)throw error;return path}
+ async function upload(file:File,folder:string){
+  const sessionResult=await supabase.auth.getSession()
+  const uid=sessionResult.data.session?.user?.id||user?.id
+  if(!uid)throw new Error('登入狀態已失效，請重新登入')
+  const rawExt=(file.name.split('.').pop()||file.type.split('/').pop()||'jpg').toLowerCase()
+  const ext=rawExt==='jpeg'?'jpg':rawExt.replace(/[^a-z0-9]/g,'')||'jpg'
+  const path=`${uid}/${folder}/${crypto.randomUUID()}.${ext}`
+  const result=await supabase.storage.from('drama-images').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||undefined})
+  if(result.error)throw new Error(result.error.message||'圖片上傳失敗')
+  if(!result.data?.path)throw new Error('圖片上傳成功，但沒有取得檔案路徑')
+  return result.data.path
+ }
  const publicUrl=(path?:string|null)=>path?supabase.storage.from('drama-images').getPublicUrl(path).data.publicUrl:''
  function openEditor(row?:Drama){setEditor(row||null);setForm(row?{...row,category_id:row.category_id||''}:{...emptyDrama});setPoster(undefined)}
- async function saveDrama(e:FormEvent){e.preventDefault();try{let posterPath=form.poster_path||null;if(poster)posterPath=await upload(poster,'posters');const payload={user_id:user.id,title:form.title.trim(),poster_path:posterPath,cast_names:form.cast_names.trim(),director:form.director.trim(),screenwriter:form.screenwriter.trim(),original_title:form.original_title.trim(),original_author:form.original_author.trim(),air_days:form.air_days.trim(),is_watched:Boolean(form.is_watched),category_id:form.category_id||null,updated_at:new Date().toISOString()};const q=editor?.id?supabase.from('dramas').update(payload).eq('id',editor.id):supabase.from('dramas').insert(payload);const{error}=await q;if(error)throw error;setEditor(undefined);await load();done(editor?'劇集已更新':'劇集已新增',false)}catch(e:any){done(`儲存失敗：${e.message||e}`,false)}}
+ async function saveDrama(e:FormEvent){e.preventDefault();try{let posterPath=form.poster_path||null;if(poster){if(!poster.type.startsWith('image/'))throw new Error('海報封面必須是圖片檔');posterPath=await upload(poster,'posters')}const payload={user_id:user.id,title:form.title.trim(),poster_path:posterPath,cast_names:form.cast_names.trim(),director:form.director.trim(),screenwriter:form.screenwriter.trim(),original_title:form.original_title.trim(),original_author:form.original_author.trim(),air_days:form.air_days.trim(),is_watched:Boolean(form.is_watched),category_id:form.category_id||null,updated_at:new Date().toISOString()};const q=editor?.id?supabase.from('dramas').update(payload).eq('id',editor.id):supabase.from('dramas').insert(payload);const{error}=await q;if(error)throw error;setEditor(undefined);await load();done(editor?'劇集已更新':'劇集已新增',false)}catch(e:any){done(`儲存失敗：${e.message||e}`,false)}}
  async function removeDrama(row:Drama){if(!confirm(`確定刪除「${row.title}」及所有觀看紀錄？`))return;const{error}=await supabase.from('dramas').delete().eq('id',row.id);if(error)return done(`刪除失敗：${error.message}`,false);await load();done('劇集已刪除',false)}
  async function saveCategory(e:FormEvent){e.preventDefault();const name=categoryName.trim();if(!name)return;const q=categoryEditor?.id?supabase.from('drama_categories').update({name}).eq('id',categoryEditor.id):supabase.from('drama_categories').insert({user_id:user.id,name,sort_order:(categories.length+1)*100});const{error}=await q;if(error)return done(`分類儲存失敗：${error.message}`,false);setCategoryEditor(undefined);setCategoryName('');await load();done('追劇分類已儲存',false)}
  async function removeCategory(x:Category){if(!confirm(`確定刪除分類「${x.name}」？劇集會保留並改為未分類。`))return;const{error}=await supabase.from('drama_categories').delete().eq('id',x.id);if(error)return done(error.message,false);await load()}
