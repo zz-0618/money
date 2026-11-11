@@ -7,7 +7,6 @@ import {
   Flame,
   Pencil,
   Plus,
-  Search,
   Trash2,
   X,
 } from 'lucide-react'
@@ -41,24 +40,12 @@ type FoodNutrition = {
   protein: number
   fat: number
   carbs: number
-  source?: 'local' | 'familymart' | 'familymart-local'
+  source?: 'local' | 'familymart-local'
   serving_g?: number | null
   serving_text?: string
   source_url?: string
 }
 
-type FamilyFoodResponse = {
-  id: string
-  name: string
-  calories: number
-  protein: number
-  fat: number
-  carbs: number
-  serving_g: number | null
-  serving_text: string
-  source_url: string
-  source: 'familymart'
-}
 
 const TYPES = [
   ['breakfast', '早餐'],
@@ -363,19 +350,15 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
   const [carbs, setCarbs] = useState(String(row.carbs_g || ''))
   const [calories, setCalories] = useState(String(row.calories || ''))
   const [foods, setFoods] = useState<FoodNutrition[]>([])
-  const [familyFoods, setFamilyFoods] = useState<FoodNutrition[]>([])
   const [foodLoading, setFoodLoading] = useState(false)
   const [foodError, setFoodError] = useState('')
-  const [familyLoading, setFamilyLoading] = useState(false)
-  const [familyError, setFamilyError] = useState('')
   const [selectedFood, setSelectedFood] = useState<FoodNutrition | null>(null)
   const [portion, setPortion] = useState('100')
 
   useEffect(() => {
     let active = true
     setFoodLoading(true)
-
-    fetch('/food-nutrition-2025.json', { cache: 'force-cache' })
+    fetch('/food-nutrition-2025.json', { cache: 'no-store' })
       .then(async response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         return response.json()
@@ -397,108 +380,34 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
       .finally(() => {
         if (active) setFoodLoading(false)
       })
-
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
-
-  async function searchFamilyFood() {
-    const query = description.trim()
-
-    if (!query) {
-      setFamilyFoods([])
-      return
-    }
-
-    setFamilyLoading(true)
-    setFamilyError('')
-    setSelectedFood(null)
-
-    try {
-      const { data, error } = await supabase.functions.invoke('family-food-search', {
-        body: { query },
-      })
-
-      if (error) throw error
-      if (!data?.ok) throw new Error(data?.error || '全家商品搜尋失敗')
-
-      const products: FoodNutrition[] = Array.isArray(data.products)
-        ? data.products.map((product: FamilyFoodResponse) => ({
-            id: product.id,
-            name: product.name,
-            aliases: [],
-            calories: Number(product.calories || 0),
-            protein: Number(product.protein || 0),
-            fat: Number(product.fat || 0),
-            carbs: Number(product.carbs || 0),
-            source: 'familymart',
-            serving_g: product.serving_g,
-            serving_text: product.serving_text,
-            source_url: product.source_url,
-          }))
-        : []
-
-      setFamilyFoods(products)
-      if (!products.length) setFamilyError('全家官方網站找不到相符商品')
-    } catch (error: any) {
-      setFamilyFoods([])
-      setFamilyError(error?.message || String(error))
-    } finally {
-      setFamilyLoading(false)
-    }
-  }
 
   const results = useMemo(() => {
     const query = foodSearchKey(description)
     if (!query || selectedFood) return []
-
-    const uniqueFoods = new Map<string, FoodNutrition>()
-    for (const food of [...familyFoods, ...foods]) {
-      const key = `${food.source || 'local'}:${food.id}`
-      if (!uniqueFoods.has(key)) uniqueFoods.set(key, food)
-    }
-
-    return [...uniqueFoods.values()]
+    return foods
       .map(food => {
         const name = foodSearchKey(food.name)
         const aliases = (food.aliases || []).map(foodSearchKey)
         let score = 0
-
         if (name === query) score = 100
         else if (aliases.includes(query)) score = 95
         else if (name.startsWith(query)) score = 85
         else if (aliases.some(alias => alias.startsWith(query))) score = 80
         else if (name.includes(query)) score = 70
         else if (aliases.some(alias => alias.includes(query))) score = 65
-
-        if (food.source === 'familymart' && score > 0) score += 10
         return { food, score }
       })
       .filter(item => item.score > 0)
-      .sort(
-        (left, right) =>
-          right.score - left.score ||
-          left.food.name.localeCompare(right.food.name, 'zh-Hant'),
-      )
-      .slice(0, 20)
+      .sort((left, right) => right.score - left.score || left.food.name.localeCompare(right.food.name, 'zh-Hant'))
+      .slice(0, 30)
       .map(item => item.food)
-  }, [description, foods, familyFoods, selectedFood])
+  }, [description, foods, selectedFood])
 
   function applyFood(food: FoodNutrition, amount = 100) {
     setSelectedFood(food)
     setDescription(food.name)
-    setFamilyError('')
-
-    if (food.source === 'familymart') {
-      setPortion(String(food.serving_g || 1))
-      setCalories(String(round(food.calories, 1)))
-      setCarbs(String(round(food.carbs, 1)))
-      setProtein(String(round(food.protein, 1)))
-      setFat(String(round(food.fat, 1)))
-      return
-    }
-
     const ratio = Math.max(0, amount) / 100
     setPortion(String(amount))
     setCalories(String(round(food.calories * ratio, 1)))
@@ -510,19 +419,7 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
   function changePortion(value: string) {
     setPortion(value)
     if (!selectedFood) return
-
     const amount = Math.max(0, Number(value || 0))
-
-    if (selectedFood.source === 'familymart') {
-      const baseAmount = selectedFood.serving_g || 1
-      const ratio = selectedFood.serving_g ? amount / baseAmount : amount
-      setCalories(String(round(selectedFood.calories * ratio, 1)))
-      setCarbs(String(round(selectedFood.carbs * ratio, 1)))
-      setProtein(String(round(selectedFood.protein * ratio, 1)))
-      setFat(String(round(selectedFood.fat * ratio, 1)))
-      return
-    }
-
     const ratio = amount / 100
     setCalories(String(round(selectedFood.calories * ratio, 1)))
     setCarbs(String(round(selectedFood.carbs * ratio, 1)))
@@ -535,17 +432,14 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
     const nextProtein = kind === 'protein' ? Number(value || 0) : Number(protein || 0)
     const nextFat = kind === 'fat' ? Number(value || 0) : Number(fat || 0)
     const nextCarbs = kind === 'carbs' ? Number(value || 0) : Number(carbs || 0)
-
     if (kind === 'protein') setProtein(value)
     if (kind === 'fat') setFat(value)
     if (kind === 'carbs') setCarbs(value)
-
     setCalories(String(round(nextProtein * 4 + nextFat * 9 + nextCarbs * 4, 1)))
   }
 
   async function save(event: FormEvent) {
     event.preventDefault()
-
     const payload = {
       user_id: user.id,
       meal_date: row.meal_date || date,
@@ -557,14 +451,11 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
       calories: Number(calories || 0),
       updated_at: new Date().toISOString(),
     }
-
     const request = row.id
       ? supabase.from('health_meals').update(payload).eq('id', row.id)
       : supabase.from('health_meals').insert(payload)
-
     const { error } = await request
     if (error) return done(error.message, false)
-
     close()
     reload()
     done('飲食紀錄已儲存', false)
@@ -575,127 +466,64 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
       <form className="panel health-editor" onSubmit={save}>
         <button type="button" className="modal-close" onClick={close}><X /></button>
         <h2>{row.id ? '編輯' : '新增'}飲食</h2>
-
         <label>
           餐別
           <select value={type} onChange={event => setType(event.target.value)}>
-            {TYPES.map(([id, typeLabel]) => (
-              <option value={id} key={id}>{typeLabel}</option>
-            ))}
+            {TYPES.map(([id, typeLabel]) => <option value={id} key={id}>{typeLabel}</option>)}
           </select>
         </label>
-
         <label className="food-search-label">
           餐點內容
           <div className="food-search-wrap">
-            <div className="food-family-search">
-              <input
-                value={description}
-                onChange={event => {
-                  setDescription(event.target.value)
-                  setSelectedFood(null)
-                  setFamilyFoods([])
-                  setFamilyError('')
-                }}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    searchFamilyFood()
-                  }
-                }}
-                placeholder="輸入食品或全家商品名稱"
-                required
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                onClick={searchFamilyFood}
-                disabled={familyLoading || !description.trim()}
-              >
-                <Search size={18} />
-                {familyLoading ? '搜尋中' : '搜尋全家'}
-              </button>
-            </div>
-
-            {foodLoading && <small className="food-search-status">本地食品資料載入中…</small>}
+            <input
+              value={description}
+              onChange={event => { setDescription(event.target.value); setSelectedFood(null) }}
+              placeholder="輸入食品或商品名稱"
+              required
+              autoComplete="off"
+            />
+            {foodLoading && <small className="food-search-status">食品資料載入中…</small>}
             {foodError && <small className="food-search-error">{foodError}</small>}
-            {familyError && <small className="food-search-error">{familyError}</small>}
-
             {results.length > 0 && (
               <div className="food-search-results">
                 {results.map(food => (
-                  <button type="button" onClick={() => applyFood(food)} key={`${food.source}-${food.id}`}>
+                  <button type="button" onClick={() => applyFood(food)} key={`${food.source || 'local'}-${food.id}`}>
                     <span>
                       <b>{food.name}</b>
                       <small>
-                        {food.source === 'familymart'
-                          ? `全家官方・${food.serving_text || '每份營養標示'}`
-                          : food.source === 'familymart-local'
-                            ? `全家商品資料庫・每 100 g${food.aliases.length ? `・分類：${food.aliases.join('、')}` : ''}`
-                            : food.aliases.length
-                              ? `俗名：${food.aliases.join('、')}`
-                              : '本地食品資料庫・每 100 g'}
+                        {food.source === 'familymart-local'
+                          ? `全家商品資料庫・每 100 g${food.aliases.length ? `・分類：${food.aliases.join('、')}` : ''}`
+                          : food.aliases.length ? `俗名：${food.aliases.join('、')}` : '本地食品資料庫・每 100 g'}
                       </small>
                     </span>
-                    <em>
-                      {round(food.calories, 1)} kcal
-                      {food.source === 'familymart' ? ' / 每份' : ' / 100g'}
-                    </em>
+                    <em>{round(food.calories, 1)} kcal / 100g</em>
                   </button>
                 ))}
               </div>
             )}
           </div>
         </label>
-
         {selectedFood && (
           <div className="food-selected">
             <div>
               <b>{selectedFood.name}</b>
-              <small>
-                {selectedFood.source === 'familymart'
-                  ? `資料來源：全家食在購安心・${selectedFood.serving_text || '每份營養標示'}；實際數值請以商品包裝為準。`
-                  : selectedFood.source === 'familymart-local'
-                    ? '資料來源：全家商品營養資料庫；營養資料以每 100 g 換算，實際數值請以商品包裝為準。'
-                    : '營養資料為每 100 g 可食部分，已依份量換算。'}
-              </small>
-              {selectedFood.source_url && (
-                <a href={selectedFood.source_url} target="_blank" rel="noreferrer">查看商品來源資料</a>
-              )}
+              <small>{selectedFood.source === 'familymart-local'
+                ? '資料來源：全家商品營養資料庫；營養資料以每 100 g 換算，實際數值請以商品包裝為準。'
+                : '營養資料為每 100 g 可食部分，已依份量換算。'}</small>
+              {selectedFood.source_url && <a href={selectedFood.source_url} target="_blank" rel="noreferrer">查看商品來源資料</a>}
             </div>
             <label>
-              {selectedFood.source === 'familymart' && !selectedFood.serving_g ? '份數' : '份量（g）'}
-              <input
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={portion}
-                onChange={event => changePortion(event.target.value)}
-              />
+              份量（g）
+              <input type="number" min="0.1" step="0.1" value={portion} onChange={event => changePortion(event.target.value)} />
             </label>
           </div>
         )}
-
         <div className="health-nutrient-inputs">
           <label>蛋白質（g）<input type="number" min="0" step="0.1" value={protein} onChange={event => manualMacro('protein', event.target.value)} /></label>
           <label>脂肪（g）<input type="number" min="0" step="0.1" value={fat} onChange={event => manualMacro('fat', event.target.value)} /></label>
           <label>碳水（g）<input type="number" min="0" step="0.1" value={carbs} onChange={event => manualMacro('carbs', event.target.value)} /></label>
         </div>
-
-        <label>
-          熱量（kcal）
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            value={calories}
-            onChange={event => {
-              setSelectedFood(null)
-              setCalories(event.target.value)
-            }}
-          />
-        </label>
-
+        <label>熱量（kcal）<input type="number" min="0" step="0.1" value={calories} onChange={event => { setSelectedFood(null); setCalories(event.target.value) }} /></label>
         <div className="health-calories">本筆熱量 <b>{round(Number(calories || 0))} kcal</b></div>
         <button>儲存</button>
       </form>
