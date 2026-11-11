@@ -122,17 +122,6 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
     throw new Error(detail)
    }
    if(!data||typeof data!=='object')throw new Error('Edge Function 沒有回傳 JSON 資料')
-   if(data.browser_fallback){
-    const openUrl=String(data.open_url||inputUrl)
-    window.open(openUrl,'_blank','noopener,noreferrer')
-    const fallbackPlatform=String(data.platform||detected)
-    const instruction=fallbackPlatform==='xiaohongshu'?'已在新分頁開啟小紅書。請等待貼文顯示後，複製網址列中的完整 xiaohongshu.com 網址（需保留 xsec_token），貼到這裡：':fallbackPlatform==='threads'?'已在新分頁開啟 Threads。若分享網址已開啟真正貼文，請複製網址列中的 @使用者/post/CODE 完整網址並貼到這裡：':'已在新分頁開啟原文。請複製最後的完整貼文網址並貼到這裡：'
-    const pasted=window.prompt(instruction,'')?.trim()
-    if(!pasted)throw new Error(String(data.error||'未貼上瀏覽器中的完整小紅書網址'))
-    if(!/^https?:\/\//i.test(pasted))throw new Error('貼上的網址格式不正確')
-    setUrl(pasted);setPlatform('xiaohongshu')
-    return await fetchMeta(pasted)
-   }
    if(data.ok===false||data.error)throw new Error(String(data.error||'文章資料讀取失敗'))
    const returnedPlatform=String(data.platform||detected)
    const rawTitle=String(data.title||'').trim(),rawBody=String(data.body||'').trim()
@@ -143,16 +132,6 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    const candidateImages=[data.image_url,data.thumbnail_url,data.cover_url,data.poster,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((v:any,i:number,a:any[])=>typeof v==='string'&&/^https?:\/\//i.test(v)&&a.indexOf(v)===i)
    const missing=[!nextTitle?'標題':'',!nextBody?'內容':'',!candidateImages.length?'影片縮圖':''].filter(Boolean)
    if(returnedPlatform==='douyin'&&missing.length)throw new Error(`抖音作品資料不完整，缺少：${missing.join('、')}`)
-   const xhsNoise=/登入\s*-\s*rednote|login\s*-\s*rednote|share,\s*connect,\s*love|來小紅書[，, ]*與全世界最有趣的人做朋友|登录\s*-\s*小红书/i
-   if(returnedPlatform==='xiaohongshu'||detected==='xiaohongshu'){
-    const xhsMissing=[!nextTitle||xhsNoise.test(nextTitle)?'標題':'',!nextBody||xhsNoise.test(nextBody)?'內文':'',!candidateImages.length?'圖片':''].filter(Boolean)
-    if(xhsMissing.length)throw new Error(`小紅書貼文資料不完整，缺少：${xhsMissing.join('、')}`)
-   }
-   if(['facebook','instagram','threads'].includes(returnedPlatform)||['facebook','instagram','threads'].includes(detected)){
-    const socialNoise=/^(facebook|instagram|threads)(\s*[-|｜].*)?$/i
-    const socialMissing=[!nextTitle||socialNoise.test(nextTitle)?'標題':'',!nextBody?'內文':''].filter(Boolean)
-    if(socialMissing.length)throw new Error(`${returnedPlatform} 貼文資料不完整，缺少：${socialMissing.join('、')}`)
-   }
    if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內容或圖片')
    setTitle(nextTitle);setBody(nextBody);setImages(candidateImages);setImage(candidateImages[0]||'')
    if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url));setPlatform(returnedPlatform)
