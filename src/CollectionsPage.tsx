@@ -125,7 +125,9 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    if(data.browser_fallback){
     const openUrl=String(data.open_url||inputUrl)
     window.open(openUrl,'_blank','noopener,noreferrer')
-    const pasted=window.prompt('已在新分頁開啟小紅書。請等待貼文顯示後，複製瀏覽器網址列中的完整 xiaohongshu.com 網址（需保留 xsec_token），貼到這裡：','')?.trim()
+    const fallbackPlatform=String(data.platform||detected)
+    const instruction=fallbackPlatform==='xiaohongshu'?'已在新分頁開啟小紅書。請等待貼文顯示後，複製網址列中的完整 xiaohongshu.com 網址（需保留 xsec_token），貼到這裡：':fallbackPlatform==='threads'?'已在新分頁開啟 Threads。若分享網址已開啟真正貼文，請複製網址列中的 @使用者/post/CODE 完整網址並貼到這裡：':'已在新分頁開啟原文。請複製最後的完整貼文網址並貼到這裡：'
+    const pasted=window.prompt(instruction,'')?.trim()
     if(!pasted)throw new Error(String(data.error||'未貼上瀏覽器中的完整小紅書網址'))
     if(!/^https?:\/\//i.test(pasted))throw new Error('貼上的網址格式不正確')
     setUrl(pasted);setPlatform('xiaohongshu')
