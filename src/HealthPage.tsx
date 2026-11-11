@@ -451,14 +451,31 @@ function MealEditor({ user, row, date, done, close, reload }: any) {
       calories: Number(calories || 0),
       updated_at: new Date().toISOString(),
     }
-    const request = row.id
-      ? supabase.from('health_meals').update(payload).eq('id', row.id)
-      : supabase.from('health_meals').insert(payload)
-    const { error } = await request
-    if (error) return done(error.message, false)
-    close()
-    reload()
-    done('飲食紀錄已儲存', false)
+    try {
+      if (row.id) {
+        const { data, error } = await supabase.rpc('health_meal_save', {
+          p_id: row.id,
+          p_meal_date: payload.meal_date,
+          p_meal_type: payload.meal_type,
+          p_description: payload.description,
+          p_protein_g: payload.protein_g,
+          p_fat_g: payload.fat_g,
+          p_carbs_g: payload.carbs_g,
+          p_calories: payload.calories,
+        })
+        if (error) throw error
+        if (!data) throw new Error('飲食紀錄更新失敗')
+      } else {
+        const { error } = await supabase.from('health_meals').insert(payload)
+        if (error) throw error
+      }
+      close()
+      await reload()
+      done(row.id ? '飲食紀錄已更新' : '飲食紀錄已儲存', false)
+    } catch (error: any) {
+      console.error('Health meal save failed:', error)
+      done(`飲食紀錄儲存失敗：${error?.message || error?.details || String(error)}`, false)
+    }
   }
 
   return (
