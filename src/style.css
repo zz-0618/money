@@ -1322,3 +1322,25 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 
 /* Settings > Books: NBINet local catalog sync */
 .book-catalog-settings{max-width:780px}.book-catalog-setting-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.book-catalog-setting-head h2{margin-bottom:5px}.book-catalog-setting-head>button{width:auto!important;min-width:110px;margin:0!important;background:#222!important;color:#fff!important}.book-catalog-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.book-catalog-stats article{padding:18px;border:1px solid #2d2d2d;border-radius:15px;background:#171717}.book-catalog-stats small,.book-catalog-stats strong,.book-catalog-stats span{display:block}.book-catalog-stats strong{margin:8px 0;font-size:26px}.book-catalog-stats span{color:#888;font-size:12px}.book-sync-progress{margin:15px 0;padding:15px;border:1px solid #315a40;border-radius:14px;background:#102418}.book-sync-progress>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.book-sync-progress i{display:block;height:8px;margin:12px 0;border-radius:99px;background:#26382c;overflow:hidden}.book-sync-progress em{display:block;height:100%;border-radius:99px;background:#78e6a4;transition:width .2s}.book-sync-progress small{color:#91b59d}.book-sync-error{padding:12px;border:1px solid #663030;border-radius:12px;background:#281515;color:#ff9a9a;line-height:1.5}.book-sync-button{width:100%!important;min-height:50px!important}.book-sync-button:disabled{opacity:.58;cursor:not-allowed}.book-sync-note{margin-top:10px;line-height:1.55}@media(max-width:600px){.book-catalog-setting-head{align-items:stretch;flex-direction:column}.book-catalog-setting-head>button{width:100%!important}.book-catalog-stats{grid-template-columns:1fr}.book-sync-progress>div{align-items:flex-start;flex-direction:column}}
+
+/* FINAL 2026-11-11: ledger repayment secondary text matches ordinary ledger rows */
+.transaction-list .transaction-main.repayment-ledger-row > span > small{
+  font-size:13px!important;
+  line-height:1.35!important;
+  font-weight:400!important;
+  color:#8f8f8f!important;
+  margin-top:5px!important;
+}
+.transaction-list .swipe-row > .transaction-main > span > small{
+  font-size:13px!important;
+  line-height:1.35!important;
+  font-weight:400!important;
+  color:#8f8f8f!important;
+  margin-top:5px!important;
+}
+@media(max-width:600px){
+  .transaction-list .transaction-main.repayment-ledger-row > span > small,
+  .transaction-list .swipe-row > .transaction-main > span > small{
+    font-size:13px!important;
+  }
+}
