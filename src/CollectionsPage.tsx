@@ -109,102 +109,44 @@ function FolderEditor({row,parentId,close,save}:any){const[name,setName]=useStat
 function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[url,setUrl]=useState(row?.url||''),[platform,setPlatform]=useState(row?.platform||'other'),[folder,setFolder]=useState(row?.folder_id||defaultFolder||''),[title,setTitle]=useState(row?.title||''),[body,setBody]=useState(row?.body||''),[image,setImage]=useState(row?.image_url||''),[images,setImages]=useState<string[]>(row?.image_urls||[]),[fetching,setFetching]=useState(false),[fetchMessage,setFetchMessage]=useState<{type:'success'|'error';text:string}|null>(null)
  async function fetchMeta(){
   const inputUrl=url.trim()
-  if(!inputUrl){
-    setFetchMessage({type:'error',text:'請先貼上文章連結'})
-    return
-  }
-
-  setFetching(true)
-  setFetchMessage(null)
-
+  if(!inputUrl){setFetchMessage({type:'error',text:'請先貼上文章連結'});return}
+  setFetching(true);setFetchMessage(null)
   try{
-    const detected=platformOf(inputUrl)
-    setPlatform(detected)
-
-    const request=supabase.functions.invoke('article-link-preview',{
-      body:{url:inputUrl},
-    })
-    const timeout=new Promise<never>((_,reject)=>
-      setTimeout(()=>reject(new Error('讀取逾時（50 秒）')),50000)
-    )
-    const{data,error}=await Promise.race([request,timeout])
-
-    if(error){
-      let message=error.message||'Edge Function 呼叫失敗'
-      try{
-        const context=(error as any)?.context
-        if(context instanceof Response){
-          const detail=await context.clone().json()
-          message=detail?.error||detail?.message||message
-        }
-      }catch{}
-      throw new Error(message)
-    }
-
-    if(!data||typeof data!=='object'){
-      throw new Error('Edge Function 沒有回傳 JSON')
-    }
-    if(data.ok===false||data.error){
-      throw new Error(String(data.error||'文章讀取失敗'))
-    }
-
-    const returnedPlatform=String(data.platform||detected)
-    let nextTitle=String(data.title||'').trim()
-    let nextBody=String(data.body||'').trim()
-    const imageUrls=[
-      data.image_url,
-      ...(Array.isArray(data.image_urls)?data.image_urls:[]),
-    ].filter(
-      (value:any,index:number,list:any[])=>
-        typeof value==='string'&&
-        /^https?:\/\//i.test(value)&&
-        list.indexOf(value)===index
-    )
-
-    if(returnedPlatform==='douyin'){
-      const noise=/于?20\d{6,8}发布在抖音|已经收获了?\d+个喜欢|来抖音[，, ]?记录美好生活/i
-      const cleanValue=(value:string)=>value
-        .replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'')
-        .replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，')
-        .replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'')
-        .trim()
-      if(noise.test(nextTitle))nextTitle=cleanValue(nextTitle)
-      if(noise.test(nextBody))nextBody=cleanValue(nextBody)
-    }
-
-    if(!nextTitle&&!nextBody&&!imageUrls.length){
-      throw new Error('來源沒有回傳可用的標題、內文或圖片')
-    }
-
-    setTitle(nextTitle||nextBody.slice(0,70)||returnedPlatform)
-    setBody(nextBody)
-    setImages(imageUrls)
-    setImage(imageUrls[0]||'')
-    if(data.resolved_url||data.url){
-      setUrl(String(data.resolved_url||data.url))
-    }
-    setPlatform(returnedPlatform)
-
-    const labels:Record<string,string>={
-      facebook:'Facebook',
-      instagram:'Instagram',
-      threads:'Threads',
-      xiaohongshu:'小紅書',
-      douyin:'抖音',
-      web:'文章',
-      other:'文章',
-    }
-    const message=`${labels[returnedPlatform]||'文章'}資料已讀取`
-    setFetchMessage({type:'success',text:message})
-    done(message,false)
+   const detected=platformOf(inputUrl);setPlatform(detected)
+   const invocation=supabase.functions.invoke('article-link-preview',{body:{url:inputUrl}})
+   const timeout=new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('讀取逾時（50 秒），請稍後重試')),50000))
+   const{data,error}=await Promise.race([invocation,timeout])
+   if(error){
+    let detail=error.message||'Edge Function 呼叫失敗'
+    try{const context=(error as any)?.context;if(context instanceof Response){const payload=await context.clone().json();detail=payload?.error||payload?.message||detail}}catch{}
+    throw new Error(detail)
+   }
+   if(!data||typeof data!=='object')throw new Error('Edge Function 沒有回傳 JSON 資料')
+   if(data.ok===false||data.error)throw new Error(String(data.error||'文章資料讀取失敗'))
+   const returnedPlatform=String(data.platform||detected)
+   const rawTitle=String(data.title||'').trim(),rawBody=String(data.body||'').trim()
+   const douyinNoise=/于?20\d{6,8}发布在抖音|已经收获了?\d+个喜欢|来抖音[，, ]?记录美好生活/i
+   const cleanDouyin=(value:string)=>value.replace(/^于?20\d{6,8}发布在抖音[，, ]*/,'').replace(/[，, ]*已经收获了?\d+个喜欢[，, ]*/g,'，').replace(/[，, ]*来抖音[，, ]?记录美好生活[！!。. ]*$/,'').trim()
+   const nextTitle=returnedPlatform==='douyin'&&douyinNoise.test(rawTitle)?cleanDouyin(rawTitle):rawTitle
+   const nextBody=returnedPlatform==='douyin'&&douyinNoise.test(rawBody)?cleanDouyin(rawBody):rawBody
+   const blockedSocial=/this content isn[’']t available(?: to everyone)?|content isn[’']t available|log in to threads|sign up for threads/i
+   const titleNoise=/^(facebook|instagram|threads|登入|login|rednote|小紅書)(\s*[-|｜].*)?$/i
+   if(['facebook','instagram','threads'].includes(returnedPlatform)&&(titleNoise.test(nextTitle)||blockedSocial.test(nextBody)))throw new Error(`${returnedPlatform} 目前只回傳登入／限制頁，沒有取得真正貼文內容`)
+   const candidateImages=[data.image_url,...(Array.isArray(data.image_urls)?data.image_urls:[])].filter((value:any,index:number,array:any[])=>typeof value==='string'&&/^https?:\/\//i.test(value)&&array.indexOf(value)===index)
+   if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內文或圖片')
+   setTitle(nextTitle||nextBody.slice(0,70)||returnedPlatform)
+   setBody(nextBody)
+   setImages(candidateImages)
+   setImage(candidateImages[0]||'')
+   if(data.resolved_url||data.url)setUrl(String(data.resolved_url||data.url))
+   setPlatform(returnedPlatform)
+   const names:Record<string,string>={facebook:'Facebook',instagram:'Instagram',threads:'Threads',xiaohongshu:'小紅書',douyin:'抖音',other:'文章'}
+   const text=`${names[returnedPlatform]||'文章'}資料已讀取`
+   setFetchMessage({type:'success',text});done(text,false)
   }catch(error:any){
-    const message=`讀取失敗：${error?.message||'來源沒有提供可讀取資料'}。連結已保留，可手動填寫。`
-    setFetchMessage({type:'error',text:message})
-    done(message,false)
-  }finally{
-    setFetching(false)
-  }
-}
-
+   const text=`讀取失敗：${error?.message||'來源網站未提供可讀取資料'}。連結已保留，可手動填寫。`
+   setFetchMessage({type:'error',text});done(text,false)
+  }finally{setFetching(false)}
+ }
  async function save(e:FormEvent){e.preventDefault();const{error}=await supabase.rpc('save_saved_article',{p_id:row?.id||null,p_folder_id:folder||null,p_platform:platformOf(url)||platform,p_url:url.trim(),p_title:title.trim()||null,p_body:body.trim()||null,p_image_url:image.trim()||null,p_image_urls:images.length?images:(image.trim()?[image.trim()]:[])});if(error)return done(error.message,false);close();done(row?'收藏已更新':'文章已收藏');reload()}
  return <div className="modal collection-editor-overlay"><form className="panel collection-modal collection-article-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯收藏':'收藏文章'}</h2><label>文章連結<div className="collection-url"><input type="url" value={url} onChange={e=>{setUrl(e.target.value);setPlatform(platformOf(e.target.value))}} required/><button type="button" disabled={fetching} onClick={()=>fetchMeta()}>{fetching?'讀取中':'讀取'}</button></div></label>{fetchMessage&&<div className={'collection-fetch-message '+fetchMessage.type} role="status" aria-live="polite">{fetchMessage.text}</div>}<label>資料夾<select value={folder} onChange={e=>setFolder(e.target.value)}><option value="">未分類</option>{folders.map((f:any)=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label><label>文章標題<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>文章圖片網址<input type="url" value={image} onChange={e=>setImage(e.target.value)}/></label><label>文章內文<textarea value={body} onChange={e=>setBody(e.target.value)}/></label>{(images.length||image)&&<div className="collection-image-gallery">{(images.length?images:[image]).map((src:string,i:number)=><img className="collection-image-preview" src={src} alt={`預覽 ${i+1}`} key={src+i}/>)}</div>}<button>儲存收藏</button></form></div>}
