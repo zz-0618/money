@@ -148,7 +148,7 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
    }
    if(['facebook','instagram','threads'].includes(returnedPlatform)||['facebook','instagram','threads'].includes(detected)){
     const socialNoise=/^(facebook|instagram|threads)(\s*[-|｜].*)?$/i
-    const socialMissing=[!nextTitle||socialNoise.test(nextTitle)?'標題':'',!nextBody?'內文':'',!candidateImages.length?'圖片':''].filter(Boolean)
+    const socialMissing=[!nextTitle||socialNoise.test(nextTitle)?'標題':'',!nextBody?'內文':''].filter(Boolean)
     if(socialMissing.length)throw new Error(`${returnedPlatform} 貼文資料不完整，缺少：${socialMissing.join('、')}`)
    }
    if(!nextTitle&&!nextBody&&!candidateImages.length)throw new Error('來源沒有回傳可用的標題、內容或圖片')
