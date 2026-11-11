@@ -110,6 +110,7 @@ export default function HealthPage({ user, done }: any) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [profileEdit, setProfileEdit] = useState(false)
   const [mealEdit, setMealEdit] = useState<Meal | null | undefined>()
+  const [mealDetail, setMealDetail] = useState<Meal | null>(null)
 
   async function load() {
     const [profileResult, mealsResult] = await Promise.all([
@@ -224,14 +225,17 @@ export default function HealthPage({ user, done }: any) {
             {rows.length ? (
               rows.map(meal => (
                 <div className="health-meal-row" key={meal.id}>
-                  <button className="health-meal-main" onClick={() => setMealEdit(meal)}>
+                  <button className="health-meal-main" onClick={() => setMealDetail(meal)}>
                     <span>
                       <b>{meal.description}</b>
                       <small>P {round(Number(meal.protein_g), 1)}g・F {round(Number(meal.fat_g), 1)}g・C {round(Number(meal.carbs_g), 1)}g</small>
                     </span>
                     <strong>{round(Number(meal.calories))} kcal</strong>
                   </button>
-                  <button className="health-delete" onClick={() => removeMeal(meal.id)}><Trash2 size={17} /></button>
+                  <div className="health-meal-actions">
+                    <button className="health-meal-icon health-edit" title="編輯" onClick={() => setMealEdit(meal)}><Pencil size={17} /></button>
+                    <button className="health-meal-icon health-delete" title="刪除" onClick={() => removeMeal(meal.id)}><Trash2 size={17} /></button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -249,6 +253,27 @@ export default function HealthPage({ user, done }: any) {
           close={() => setProfileEdit(false)}
           reload={load}
         />
+      )}
+
+      {mealDetail && (
+        <div className="modal health-meal-detail-modal">
+          <article className="panel health-meal-detail">
+            <div className="health-meal-detail-actions">
+              <button className="health-meal-icon health-edit" title="編輯" onClick={() => { setMealEdit(mealDetail); setMealDetail(null) }}><Pencil size={18} /></button>
+              <button className="health-meal-icon health-delete" title="刪除" onClick={async () => { const id = mealDetail.id; setMealDetail(null); await removeMeal(id) }}><Trash2 size={18} /></button>
+              <button className="health-meal-icon health-close" title="關閉" onClick={() => setMealDetail(null)}><X size={20} /></button>
+            </div>
+            <small className="health-meal-detail-type">{TYPES.find(([id]) => id === mealDetail.meal_type)?.[1] || '飲食'}</small>
+            <h2>{mealDetail.description}</h2>
+            <strong className="health-meal-detail-calories">{round(Number(mealDetail.calories))} kcal</strong>
+            <div className="health-meal-detail-grid">
+              <article><small>蛋白質</small><b>{round(Number(mealDetail.protein_g), 1)} g</b></article>
+              <article><small>脂肪</small><b>{round(Number(mealDetail.fat_g), 1)} g</b></article>
+              <article><small>碳水</small><b>{round(Number(mealDetail.carbs_g), 1)} g</b></article>
+            </div>
+            <small className="health-meal-detail-date">{mealDetail.meal_date}</small>
+          </article>
+        </div>
       )}
 
       {mealEdit !== undefined && (
