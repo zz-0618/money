@@ -1382,3 +1382,5 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 .drama-category-list>div>.drama-category-action svg{width:18px!important;height:18px!important}
 @media(max-width:480px){.drama-category-list>div{grid-template-columns:22px minmax(0,1fr) 32px 32px!important;column-gap:5px!important}.drama-category-list>div>.drama-category-action{width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important}.drama-category-list>div>span{font-size:14px!important}}
 .pocket-map-list-marker{width:42px!important;height:42px!important;border:2px solid #111!important;border-radius:50%!important;background:#fff!important;color:#111!important;display:grid!important;place-items:center!important;box-shadow:0 2px 8px #0006!important}.pocket-map-list-marker svg{display:block!important;width:21px!important;height:21px!important;stroke:currentColor!important;fill:none!important}
+
+.drama-record-count{margin:4px 0 14px;color:#8c8c8c;font-size:13px;line-height:1.4}
