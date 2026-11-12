@@ -1381,3 +1381,5 @@ form input[type="date"],form input[type="datetime-local"]{display:block;width:10
 .drama-category-list>div>.drama-category-action:nth-of-type(2){grid-column:4!important}
 .drama-category-list>div>.drama-category-action svg{width:18px!important;height:18px!important}
 @media(max-width:480px){.drama-category-list>div{grid-template-columns:22px minmax(0,1fr) 32px 32px!important;column-gap:5px!important}.drama-category-list>div>.drama-category-action{width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important}.drama-category-list>div>span{font-size:14px!important}}
+/* Pocket map markers: use each list's Lucide icon instead of first-character text */
+.pocket-map-list-marker{width:44px;height:44px;border:2px solid #111;border-radius:50%;background:#fff;color:#050505;display:grid;place-items:center;box-shadow:0 3px 10px #0005;transform:translateY(-2px)}.pocket-map-list-marker svg{width:21px;height:21px;stroke-width:2.15}
