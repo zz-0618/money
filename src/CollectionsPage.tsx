@@ -123,7 +123,9 @@ function ArticleEditor({row,folders,defaultFolder,done,close,reload}:any){const[
   if(!inputUrl){setFetchMessage({type:'error',text:'請先貼上文章連結'});return}
   setFetching(true);setFetchMessage(null)
   try{
-   const data=await getArticlePreview(inputUrl,9500)
+   const requestPlatform=platformOf(inputUrl)
+   const previewTimeout=requestPlatform==='xiaohongshu'||requestPlatform==='douyin'?60_000:9_500
+   const data=await getArticlePreview(inputUrl,previewTimeout)
    lastFetchedUrl.current=inputUrl
    const returnedPlatform=String(data.platform||platformOf(inputUrl))
    const rawTitle=String(data.title||'').trim(),rawBody=String(data.body||'').trim()
