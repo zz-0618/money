@@ -41,15 +41,12 @@ export default function DramaPage({user,done}:any){
     try{galleryPaths.push(await upload(file,'gallery'))}catch(error:any){throw new Error(`階段[劇照 ${i+1}/${galleryFiles.length} 上傳]：${error?.message||String(error)}`)}
   }
   const payload={user_id:user.id,title:form.title.trim(),poster_path:posterPath,gallery_paths:galleryPaths,cast_names:form.cast_names.trim(),director:form.director.trim(),screenwriter:form.screenwriter.trim(),original_title:form.original_title.trim(),original_author:form.original_author.trim(),air_days:form.air_days.trim(),watch_status:form.watch_status,is_watched:form.watch_status==='watched',category_id:form.category_id||null,updated_at:new Date().toISOString()}
-  // gallery_paths 是唯一新增欄位，改由小型 RPC 更新，避免目前瀏覽器 PATCH dramas 時 Failed to fetch。
-  // 其他既有欄位仍沿用原本已正常運作的 dramas update/insert。
-  const basePayload={...payload};delete (basePayload as any).gallery_paths
-  if(editor?.id){
-    try{const{error}=await supabase.from('dramas').update(basePayload).eq('id',editor.id);if(error)throw error}catch(error:any){throw new Error(`階段[既有劇集欄位更新]：${error?.message||String(error)}`)}
-    try{const{error}=await supabase.rpc('set_drama_gallery_paths',{p_drama_id:editor.id,p_gallery_paths:galleryPaths});if(error)throw error}catch(error:any){throw new Error(`階段[劇照路徑 RPC 更新]：${error?.message||String(error)}`)}
-  }else{
-    try{const{data,error}=await supabase.from('dramas').insert(basePayload).select('id').single();if(error)throw error;if(!data?.id)throw new Error('新增成功但未取得劇集 ID');const r=await supabase.rpc('set_drama_gallery_paths',{p_drama_id:data.id,p_gallery_paths:galleryPaths});if(r.error)throw r.error}catch(error:any){throw new Error(`階段[新增劇集/劇照路徑]：${error?.message||String(error)}`)}
-  }
+  // 圖片仍使用原本成功的 Storage upload；所有劇集欄位改由單一 RPC 寫入，避開瀏覽器 PATCH dramas 的 Failed to fetch。
+  try{
+    const{data,error}=await supabase.rpc('save_drama',{p_id:editor?.id||null,p_title:payload.title,p_poster_path:payload.poster_path,p_gallery_paths:galleryPaths,p_cast_names:payload.cast_names,p_director:payload.director,p_screenwriter:payload.screenwriter,p_original_title:payload.original_title,p_original_author:payload.original_author,p_air_days:payload.air_days,p_watch_status:payload.watch_status,p_category_id:payload.category_id})
+    if(error)throw error
+    if(!data)throw new Error('RPC 未回傳劇集 ID')
+  }catch(error:any){throw new Error(`階段[save_drama RPC]：${error?.message||String(error)}`)}
   setEditor(undefined)
   try{await load()}catch(error:any){done(`劇集已儲存，但重新讀取失敗：${error?.message||String(error)}`,false);return}
   done(editor?'劇集已更新':'劇集已新增',false)
