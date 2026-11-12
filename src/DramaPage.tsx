@@ -30,18 +30,23 @@ export default function DramaPage({user,done}:any){
  function openEditor(row?:Drama){setEditor(row||null);setForm(row?{...row,gallery_paths:row.gallery_paths||[],category_id:row.category_id||''}:{...emptyDrama});setPoster(undefined);setGalleryFiles([])}
  async function saveDrama(e:FormEvent){e.preventDefault();try{
   let posterPath=form.poster_path||null
-  if(poster){if(!poster.type.startsWith('image/'))throw new Error('海報封面必須是圖片檔');posterPath=await upload(poster,'posters')}
+  if(poster){
+    if(!poster.type.startsWith('image/'))throw new Error('海報封面必須是圖片檔')
+    try{posterPath=await upload(poster,'posters')}catch(error:any){throw new Error(`階段[海報上傳]：${error?.message||String(error)}`)}
+  }
   const galleryPaths:string[]=[...(form.gallery_paths||[])]
-  // 劇照完全沿用目前海報已成功使用的 upload()，逐張依序上傳，不使用 RPC / Worker / Promise.all。
   for(let i=0;i<galleryFiles.length;i++){
     const file=galleryFiles[i]
     if(!file.type.startsWith('image/'))throw new Error(`第 ${i+1} 張劇照不是圖片檔`)
-    try{galleryPaths.push(await upload(file,'gallery'))}catch(error:any){throw new Error(`第 ${i+1} 張劇照上傳失敗：${error?.message||String(error)}`)}
+    try{galleryPaths.push(await upload(file,'gallery'))}catch(error:any){throw new Error(`階段[劇照 ${i+1}/${galleryFiles.length} 上傳]：${error?.message||String(error)}`)}
   }
   const payload={user_id:user.id,title:form.title.trim(),poster_path:posterPath,gallery_paths:galleryPaths,cast_names:form.cast_names.trim(),director:form.director.trim(),screenwriter:form.screenwriter.trim(),original_title:form.original_title.trim(),original_author:form.original_author.trim(),air_days:form.air_days.trim(),watch_status:form.watch_status,is_watched:form.watch_status==='watched',category_id:form.category_id||null,updated_at:new Date().toISOString()}
-  const q=editor?.id?supabase.from('dramas').update(payload).eq('id',editor.id):supabase.from('dramas').insert(payload)
-  const{error}=await q;if(error)throw new Error(error.message)
-  setEditor(undefined);await load();done(editor?'劇集已更新':'劇集已新增',false)
+  let q
+  try{q=editor?.id?supabase.from('dramas').update(payload).eq('id',editor.id):supabase.from('dramas').insert(payload)}catch(error:any){throw new Error(`階段[建立資料庫請求]：${error?.message||String(error)}`)}
+  try{const{error}=await q;if(error)throw error}catch(error:any){throw new Error(`階段[dramas 資料庫更新]：${error?.message||String(error)}`)}
+  setEditor(undefined)
+  try{await load()}catch(error:any){done(`劇集已儲存，但重新讀取失敗：${error?.message||String(error)}`,false);return}
+  done(editor?'劇集已更新':'劇集已新增',false)
  }catch(e:any){done(`儲存失敗：${e?.message||String(e)}`,false)}}
  async function removeDrama(row:Drama){if(!confirm(`確定刪除「${row.title}」及所有觀看紀錄？`))return;const{error}=await supabase.from('dramas').delete().eq('id',row.id);if(error)return done(`刪除失敗：${error.message}`,false);await load();done('劇集已刪除',false)}
  async function saveCategory(e:FormEvent){e.preventDefault();const name=categoryName.trim();if(!name)return;const q=categoryEditor?.id?supabase.from('drama_categories').update({name}).eq('id',categoryEditor.id):supabase.from('drama_categories').insert({user_id:user.id,name,sort_order:(categories.length+1)*100});const{error}=await q;if(error)return done(`分類儲存失敗：${error.message}`,false);setCategoryEditor(undefined);setCategoryName('');await load();done('追劇分類已儲存',false)}
