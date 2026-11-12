@@ -39,6 +39,33 @@ function BookEditor({user,row,categories,done,reload,close}:any){
  const[form,setForm]=useState<any>(row?{...emptyForm,...row,title:row.title||'',author:row.author||'',publisher:row.publisher||'',isbn:row.isbn||'',protagonists:row.protagonists||'',description:row.description||'',source_url:row.source_url||'',image_url:row.image_url||'',category_id:row.category_id||'',review:row.review||'',rating:row.rating?String(row.rating):'',quotesText:(row.quotes||[]).join('\n')}:{...emptyForm})
  const[cover,setCover]=useState<File>(),[saving,setSaving]=useState(false)
  async function uploadCover(file:File){if(!file.type.startsWith('image/'))throw new Error('封面必須是圖片檔');const ext=(file.name.split('.').pop()||file.type.split('/').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';const path=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,10)}.${ext}`;const{data,error}=await supabase.storage.from('book-covers').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;return supabase.storage.from('book-covers').getPublicUrl(data.path).data.publicUrl}
- async function save(e:FormEvent){e.preventDefault();const text=(value:any)=>String(value??'').trim();if(!text(form.title))return done('請輸入書名',false);setSaving(true);try{let imageUrl=text(form.image_url)||null;if(cover)imageUrl=await uploadCover(cover);const status=form.status as BookStatus;const payload={user_id:user.id,source:'manual',source_id:row?.source_id||`manual-${crypto.randomUUID?.()||Date.now()}`,title:text(form.title),author:text(form.author)||null,publisher:text(form.publisher)||null,isbn:text(form.isbn)||null,protagonists:text(form.protagonists)||null,description:text(form.description)||null,source_url:text(form.source_url)||null,image_url:imageUrl,category_id:text(form.category_id)||null,status,rating:status!=='want'&&text(form.rating)?Number(form.rating):null,review:status!=='want'&&text(form.review)?text(form.review):null,quotes:status!=='want'?String(form.quotesText??'').split('\n').map((x:string)=>x.trim()).filter(Boolean):[],updated_at:new Date().toISOString()};const q=row?.id?supabase.from('bookshelf_items').update(payload).eq('id',row.id):supabase.from('bookshelf_items').insert(payload);const{error}=await q;if(error)throw error;close();await reload();done(row?.id?'書籍已更新':'書籍已新增',false)}catch(error:any){done(`儲存失敗：${error?.message||String(error)}`,false)}finally{setSaving(false)}}
+ async function save(e:FormEvent){e.preventDefault();const text=(value:any)=>String(value??'').trim();if(!text(form.title))return done('請輸入書名',false);setSaving(true);try{
+  let imageUrl=text(form.image_url)||null
+  if(cover){try{imageUrl=await uploadCover(cover)}catch(error:any){throw new Error(`階段[封面上傳]：${error?.message||String(error)}`)}}
+  const status=form.status as BookStatus
+  const sourceId=row?.source_id||`manual-${Date.now()}-${Math.random().toString(36).slice(2,10)}`
+  try{
+    const{data,error}=await supabase.rpc('save_bookshelf_item_manual',{
+      p_id:row?.id||null,
+      p_source_id:sourceId,
+      p_title:text(form.title),
+      p_author:text(form.author)||null,
+      p_publisher:text(form.publisher)||null,
+      p_isbn:text(form.isbn)||null,
+      p_protagonists:text(form.protagonists)||null,
+      p_description:text(form.description)||null,
+      p_source_url:text(form.source_url)||null,
+      p_image_url:imageUrl,
+      p_category_id:text(form.category_id)||null,
+      p_status:status,
+      p_rating:status!=='want'&&text(form.rating)?Number(form.rating):null,
+      p_review:status!=='want'&&text(form.review)?text(form.review):null,
+      p_quotes:status!=='want'?String(form.quotesText??'').split('\n').map((x:string)=>x.trim()).filter(Boolean):[]
+    })
+    if(error)throw error
+    if(!data)throw new Error('RPC 未回傳書籍 ID')
+  }catch(error:any){throw new Error(`階段[書籍資料儲存]：${error?.message||String(error)}`)}
+  close();await reload();done(row?.id?'書籍已更新':'書籍已新增',false)
+ }catch(error:any){done(`儲存失敗：${error?.message||String(error)}`,false)}finally{setSaving(false)}}
  return <div className="modal book-editor-overlay"><form className="panel book-editor" onSubmit={save}><button type="button" className="modal-close" onClick={close}><X/></button><h2>{row?'編輯':'新增'}書籍</h2><label>書名 *<input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} required/></label><div className="book-two"><label>作者<input value={form.author||''} onChange={e=>setForm({...form,author:e.target.value})}/></label><label>出版社<input value={form.publisher||''} onChange={e=>setForm({...form,publisher:e.target.value})}/></label></div><div className="book-two"><label>ISBN<input value={form.isbn||''} onChange={e=>setForm({...form,isbn:e.target.value})}/></label><label>主角<input value={form.protagonists||''} onChange={e=>setForm({...form,protagonists:e.target.value})} placeholder="多人可用、分隔"/></label></div><label>簡介<textarea value={form.description||''} onChange={e=>setForm({...form,description:e.target.value})}/></label><label>來源網址<input type="url" value={form.source_url||''} onChange={e=>setForm({...form,source_url:e.target.value})} placeholder="https://..."/></label><label>書本封面圖片<input type="file" accept="image/*" onChange={e=>setCover(e.target.files?.[0])}/>{form.image_url&&<small>目前已有封面；未選新圖片會保留原封面。</small>}</label><label>自訂分類<select value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}><option value="">未分類</option>{categories.map((x:Category)=><option value={x.id} key={x.id}>{x.name}</option>)}</select></label><label>閱讀狀態<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{STATUS.map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>{form.status!=='want'&&<><label>評分<select value={form.rating} onChange={e=>setForm({...form,rating:e.target.value})}><option value="">不評分</option>{[1,2,3,4,5].map(x=><option value={x} key={x}>{x} 星</option>)}</select></label><label>心得<textarea value={form.review||''} onChange={e=>setForm({...form,review:e.target.value})}/></label><label>佳句<textarea value={form.quotesText||''} onChange={e=>setForm({...form,quotesText:e.target.value})} placeholder="每行一則佳句"/></label></>}<button disabled={saving}>{saving?'儲存中…':'儲存'}</button></form></div>
 }
