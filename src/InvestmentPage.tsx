@@ -1,6 +1,7 @@
 import {FormEvent,useEffect,useMemo,useState} from 'react'
 import {Banknote,Pencil,Plus,RefreshCw,Search,Trash2,X} from 'lucide-react'
 import {supabase} from './supabase'
+import InvestmentRecurring from './InvestmentRecurring'
 
 type SecurityType='stock'|'etf'
 type Stock={symbol:string;name:string;market:string;security_type?:SecurityType}
@@ -24,6 +25,7 @@ export default function InvestmentPage({user,done}:any){
  return <>
   <div className="investment-actions"><button onClick={()=>refresh(false)} disabled={refreshing}><RefreshCw className={refreshing?'spin':''}/>{refreshing?'更新中':'更新股價'}</button><button onClick={()=>setDividendEditor(null)}><Banknote/>記錄股息</button></div>
   <section className="investment-summary"><article><small>總成本</small><b>{money(cost)}</b></article><article><small>目前市值</small><b>{money(total)}</b></article><article><small>總評價</small><b className={total-cost>=0?'gain':'loss'}>{total-cost>=0?'+':''}{money(total-cost)}</b></article><article><small>累積股利</small><b>{money(income)}</b></article></section>
+  <InvestmentRecurring user={user} settlementAccountId={settlementAccountId} done={done} onConfirmed={load}/>
   <section className="investment-grid">{positions.length?positions.map(x=><button className="investment-card" onClick={()=>setSelected(x)} key={x.symbol}><div><small>{x.symbol}・{x.market}・{x.security_type==='etf'?'ETF':'股票'}</small><h2>{x.name}</h2><span>{x.shares.toLocaleString()} 股</span></div><dl><div><dt>買進成本</dt><dd>{money(x.cost)}</dd></div><div><dt>目前股價</dt><dd>{x.price?money(x.price):refreshing?'更新中…':'尚未取得'}</dd></div><div><dt>市值</dt><dd>{x.price?money(x.marketValue):'—'}</dd></div><div><dt>評價</dt><dd className={x.unrealized>=0?'gain':'loss'}>{x.price?`${x.unrealized>=0?'+':''}${money(x.unrealized)} (${x.returnPct.toFixed(2)}%)`:'—'}</dd></div><div><dt>累積股利</dt><dd>{money(x.dividends)}</dd></div></dl></button>):<p className="empty">尚未建立股票紀錄</p>}</section>
   <button className="floating-add" title="新增買進" onClick={()=>setTradeEditor(null)}><Plus/></button>
   {tradeEditor!==undefined&&<TradeEditor user={user} row={tradeEditor} settlementAccountId={settlementAccountId} done={done} reload={load} close={()=>setTradeEditor(undefined)}/>} {dividendEditor!==undefined&&<DividendEditor user={user} row={dividendEditor} positions={positions} done={done} reload={load} close={()=>setDividendEditor(undefined)}/>} 
