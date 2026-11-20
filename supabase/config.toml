@@ -1,0 +1,2 @@
+[functions.article-link-preview]
+verify_jwt = false
