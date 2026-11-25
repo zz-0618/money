@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 import { createLocal, updateLocal } from './offlineRepository'
 import * as XLSX from 'xlsx'
 import TravelPage from './TravelPage'
+import TravelPublicPage from './TravelPublicPage'
 import CollectionsPage from './CollectionsPage'
 import PocketListPage from './PocketListPage'
 import HealthPage from './HealthPage'
@@ -94,6 +95,8 @@ const ALL_ACCOUNT_PRESETS=[...ACCOUNT_PRESETS.bank,...ACCOUNT_PRESETS.credit_car
 function AccountLogo({iconKey,name,size=42,kind}:any){const preset=ALL_ACCOUNT_PRESETS.find(x=>x.key===iconKey);return preset?<span className={'account-logo-frame '+(kind==='credit_card'||kind==='debit_card'?'credit-card-logo-frame':'')} style={{width:size,height:kind==='credit_card'||kind==='debit_card'?Math.round(size*1.42):size}}><img className="account-logo" src={preset.logo} alt={name||preset.name}/></span>:<span className="account-logo-frame account-logo-fallback" style={{width:size,height:size}}><Landmark size={Math.round(size*.52)}/></span>}
 
 export default function App(){
+ const publicTravelMatch=window.location.pathname.match(/^\/travel-share\/([0-9a-f-]{36})\/?$/i)
+
   const[user,setUser]=useState<any>()
   const[view,setView]=useState('home')
   const[accounts,setAccounts]=useState<Account[]>([])
@@ -125,6 +128,7 @@ export default function App(){
   }
   useEffect(()=>{if(!user)return;load();const channel=supabase.channel('wealthlife-sync').on('postgres_changes',{event:'*',schema:'public'},load).subscribe();return()=>{supabase.removeChannel(channel)}},[user])
   useEffect(()=>{if(!msg)return;const timer=window.setTimeout(()=>setMsg(''),5000);return()=>window.clearTimeout(timer)},[msg])
+  if(publicTravelMatch)return <TravelPublicPage token={publicTravelMatch[1]}/>
   if(!user)return <Auth/>
 
   const currentMonth=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date())
